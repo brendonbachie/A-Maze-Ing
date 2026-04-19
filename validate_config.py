@@ -9,20 +9,29 @@
 
 class Configuration():
     def __init__(self):
+        #verificar se os valores são negativos (width e height)
         self.width = -1
         self.height = -1
+        #verificar se os valores são negativos ou se estão fora dos limites do labirinto (entry e exit)
         self.entry = (-1, -1)
         self.exit = (-1, -1)
+        #verificar se o valor é um caminho válido e se a extensão é .txt (output_file)
         self.output_file = ""
+        #verificar se o valor é 'true' ou 'false' (perfect)
         self.perfect = None
 
 #A parse_coordinates é necessária pra converter os valores do entry e exit pra tupla de ints, e validar que estão no formato correto. Se não tivere, vai dar erro
-def parse_coordinates(value):
+def parse_coordinates(value: str, width: int, height: int) -> tuple:
     x, y = value.split(",")
-    return (int(x.strip()), int(y.strip()))
+    x, y = int(x.strip()), int(y.strip())
+    if x < 0 or x >= width:
+        raise ValueError(f"X coordinate {x} is out of bounds for width {width}")
+    if y < 0 or y >= height:
+        raise ValueError(f"Y coordinate {y} is out of bounds for height {height}")
+    return (x, y)
 
 #A parser_config é necessária pra pegar o arquivo de configuração lido, transformar num dicionário de chave e valor, e  retornar esse dicionário
-def parser_config(conf_file):
+def parser_config(conf_file: str) -> dict:
     confs = {}
     for line in conf_file.splitlines():
         if line.strip() and not line.startswith("#"):
@@ -35,26 +44,36 @@ def parser_config(conf_file):
 # a validate_config é necessária pra validar os valores do dicionário de configuração, e retornar um objeto Configuration com os valores validados. Se algum valor for inválido, ele vai imprimir o erro e retornar o objeto Configuration com os valores padrão 
 def validate_config(config: dict) -> Configuration:
     configuration = Configuration()
+    configs_required = ["WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"]
     try:
         for key, value in config.items():
-            if key == "WIDTH":
+            if key == "WIDTH" and int(value) > 0:
                 configuration.width = int(value)
-            elif key == "HEIGHT":
+                configs_required.remove("WIDTH")
+            elif key == "HEIGHT" and int(value) > 0:
                 configuration.height = int(value)
+                configs_required.remove("HEIGHT")
             elif key == "ENTRY":
-                configuration.entry = parse_coordinates(value)
+                configuration.entry = parse_coordinates(value, configuration.width, configuration.height)
+                configs_required.remove("ENTRY")
             elif key == "EXIT":
-                configuration.exit = parse_coordinates(value)
-            elif key == "OUTPUT_FILE":
+                configuration.exit = parse_coordinates(value, configuration.width, configuration.height)
+                configs_required.remove("EXIT")
+            elif key == "OUTPUT_FILE" and value.endswith(".txt"):
                 configuration.output_file = value
+                configs_required.remove("OUTPUT_FILE")
             elif key == "PERFECT":
                 if value.lower() not in ["true", "false"]:
-                    raise ValueError("PERFECT must be 'true' or 'false'")
+                    raise ValueError("PERFECT must be 'True' or 'False'")
                 configuration.perfect = value.lower() == "true"
+                configs_required.remove("PERFECT")
             else:
-                raise ValueError(f"Unknown configuration key: {key}")
+                raise ValueError(f"Wrong configuration")
+        if configs_required:
+            raise ValueError(f"Missing configuration keys: {', '.join(configs_required)}")
     except Exception as e:
         print(f"Error validating config: {e}")
+        exit(1)
     return configuration
 
 #por fim, a read_config_file é necessária pra ler o arquivo de configuração, chamar as funções de parser e validação, e retornar o objeto Configuration com os valores validados.
@@ -68,11 +87,15 @@ def read_config_file() -> Configuration:
         conf = validate_config(conf_dict)
     except Exception as e:
         print(f"Error: {e}")
+        exit(1)
     return conf
 
-#TODO:
-    # criar função para validar os valores de cada configuração, por exemplo, verificar se width e height são números positivos, se entry e exit estão dentro dos limites do labirinto, etc.
-    # criar função para validar se o arquivo de saída é um caminho válido e se a extensão é .txt
 
 if __name__ == "__main__":
-    read_config_file()
+    config = read_config_file()
+    print(f"Width: {config.width}")
+    print(f"Height: {config.height}")
+    print(f"Entry: {config.entry}")
+    print(f"Exit: {config.exit}")
+    print(f"Output File: {config.output_file}")
+    print(f"Perfect: {config.perfect}")
