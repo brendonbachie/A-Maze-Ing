@@ -1,3 +1,5 @@
+import validate_config
+
 class Cell():
     def __init__(self, x, y):
         self.x = x
@@ -9,13 +11,13 @@ class Cell():
         self.visited = False
 
 class MazeGenerator():
-    def __init__(self, width: int, height: int, entry: tuple, exit: tuple, perfect: bool):
-        self.width = width
-        self.height = height
-        self.entry = entry
-        self.exit = exit
-        self.perfect = perfect
-        self.maze = [[Cell(x, y) for x in range(width)] for y in range(height)]
+    def __init__(self, configuration: validate_config.Configuration):
+        self.width = configuration.width
+        self.height = configuration.height
+        self.entry = configuration.entry
+        self.exit = configuration.exit
+        self.perfect = configuration.perfect
+        self.maze = [Cell(x, y) for x in range(self.width) for y in range(self.height)]
 
 '''Pegar celula "inicio", marca como visitada, 
 fazer lista de vizinhos, verificar x e y negativos, maior que o limite ou visitada com if, se for, não colocar na lista,
