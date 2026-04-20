@@ -1,3 +1,5 @@
+import time
+
 import mlx
 import validate_config
 import map
@@ -93,7 +95,7 @@ def main():
     '''A draw_rect eu expliquei lá em cima ja. Eu passo pra ela nesse momento o data, o tamanho da linha, a posição 0,0 pra começar a desenhar do canto superior esquerdo, 
     o tamanho do labirinto em pixels, a cor de fundo e o tamanho total do labirinto em pixels pra ela não desenhar fora da imagem. 
     Essa cor pode ser alterada, será a cor de fundo, que ficará aparentemente como as paredes, mas na verdade é só o fundo da imagem, e as paredes vão ser desenhadas por cima dela.'''
-    draw_rect(data, size_line, 0, 0, maze_pixel_width, maze_pixel_height, 0xFFFF00, maze_pixel_width, maze_pixel_height)
+    draw_rect(data, size_line, 0, 0, maze_pixel_width, maze_pixel_height, 0x000000, maze_pixel_width, maze_pixel_height)
     
     '''Loop macio que roda em cima da lista de celulas do labirinto, e pra cada célula ele calcula a posição x, y em pixels baseado na posição da célula no labirinto, o tamanho da célula, 
     e o tamanho da parede, e depois chama a função draw_rect pra desenhar a célula e as paredes.
@@ -101,19 +103,22 @@ def main():
     multiplicando pelo tamanho da célula e o tamanho da parede, e somando a margem.
     Depois, pra cada parede (norte, sul, oeste, leste), ele verifica se a parede existe (se cell.north, cell.south, cell.west, cell.east são True), e se existir,
     ele chama a função draw_rect pra desenhar a parede na posição correta, com o tamanho correto, e a cor de parede'''
-    for cell in maze.maze:
-        cx = margem_size + cell.x * (cell_size + wall_size)
-        cy = margem_size + cell.y * (cell_size + wall_size)
-        draw_rect(data, size_line, cx, cy, cell_size, cell_size, 0xF0F000, maze_pixel_width, maze_pixel_height)
-        if cell.north:
-            draw_rect(data, size_line, cx, cy - wall_size, cell_size + wall_size, wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
-        if cell.south:
-            draw_rect(data, size_line, cx, cy + cell_size, cell_size + wall_size, wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
-        if cell.west:
-            draw_rect(data, size_line, cx - wall_size, cy, wall_size, cell_size + wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
-        if cell.east:
-            draw_rect(data, size_line, cx + cell_size, cy, wall_size, cell_size + wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
 
+    # for cell in maze.maze:
+    #     cx = margem_size + cell.x * (cell_size + wall_size)
+    #     cy = margem_size + cell.y * (cell_size + wall_size)
+    #     draw_rect(data, size_line, cx, cy, cell_size, cell_size, 0xF0F000, maze_pixel_width, maze_pixel_height)
+    #     if cell.north:
+    #         draw_rect(data, size_line, cx, cy - wall_size, cell_size + wall_size, wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+    #     if cell.south:
+    #         draw_rect(data, size_line, cx, cy + cell_size, cell_size + wall_size, wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+    #     if cell.west:
+    #         draw_rect(data, size_line, cx - wall_size, cy, wall_size, cell_size + wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+    #     if cell.east:
+    #         draw_rect(data, size_line, cx + cell_size, cy, wall_size, cell_size + wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+    #     ptr.mlx_expose_hook(win, expose_hook, None)
+
+    
     '''Depois de todo o trabalho, a merda da imagem ainda não aparece, porque nada pode ser tão fácil.
     Tive que criar uma função de expose, que vai ser chamada toda vez que a janela precisar ser redesenhada, 
     e essa função vai chamar a função mlx_put_image_to_window pra colocar a imagem na janela, e depois chamar 
@@ -130,13 +135,48 @@ def main():
     só seria chamada quando a janela precisasse ser redesenhada, economizando recursos do sistema.")
     
     Vai tomar no cu tu e a MLX, copilot'''
+
     def expose_hook(param):
         ptr.mlx_put_image_to_window(mlx_ptr, win, image, 0, 0)
-    
-    ptr.mlx_expose_hook(win, expose_hook, None)
-
     '''Mesmo problema do hook lá do expose, mas aqui é pra chamar a função de fechar a janela quando aperta ESC, que eu já expliquei lá em cima.'''
     ptr.mlx_key_hook(win, close_window, None)
+
+
+
+    '''Essa função update vai fazer conseguir printar célula por célula. No momento ela só está printando a malha inteira, porque o DFS ainda não está
+    implementado, mas a ideia é que ela vá printando as células conforme o DFS vai visitando elas, pra dar um efeito visual de construção do labirinto.
+    Ela é basicamente o loop macio lá de cima, mas tem um indice que vai visitar todas as células da malha. Pra cada célula, ela faz o mesmo processo 
+    de calcular a posição dos pixels do loop, a diferença aqui é que ela faz apenas de um, deixando o loop a cargo do loop_hook (mains um while(true) da vida)
+    no final, ela usa um time.sleep pra segurar o loop por 0.05s e dar o efeito de frame por frame (usar timestap talvez?) e depois incrementa index pro próximo frame.'''
+    len_maze = len(maze.maze)
+    idx = 0
+    def update(param):
+        nonlocal idx
+
+        if idx >= len_maze:
+            return
+        cell = maze.maze[idx]
+        cx = margem_size + cell.x * (cell_size + wall_size)
+        cy = margem_size + cell.y * (cell_size + wall_size)
+        draw_rect(data, size_line, cx, cy, cell_size, cell_size, 0xFFFFFF, maze_pixel_width, maze_pixel_height)
+        if cell.north:
+            draw_rect(data, size_line, cx, cy - wall_size, cell_size + wall_size, wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+        if cell.south:
+            draw_rect(data, size_line, cx, cy + cell_size, cell_size + wall_size, wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+        if cell.west:
+            draw_rect(data, size_line, cx - wall_size, cy, wall_size, cell_size + wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+        if cell.east:
+            draw_rect(data, size_line, cx + cell_size, cy, wall_size, cell_size + wall_size, 0x00F000, maze_pixel_width, maze_pixel_height)
+        ptr.mlx_put_image_to_window(mlx_ptr, win, image, 0, 0)
+        time.sleep(0.05)
+        idx += 1
+
+    '''Esse primeiro expose_hook é necessário pra mostrar a imagem inicial (que é só o fundo) na janela, e depois o loop_hook vai ficar chamando a função update '''
+    ptr.mlx_expose_hook(win, expose_hook, None)
+
+    '''O loop_hook é uma função da mlx que recebe um ponteiro da mlx, uma função de callback, e um parâmetro opcional (que não vou usar), e fica chamando a função de callback em um loop, passando 
+    o parâmetro opcional pra ela, até que a função de callback retorne False ou a janela seja fechada.'''
+    ptr.mlx_loop_hook(mlx_ptr, update, None)
 
     '''Finalmente, depois de toda essa merda, a função mlx_loop é chamada pra iniciar o loop da mlx, que vai ficar rodando até a janela ser fechada, e
     vai chamar os callbacks registrados (expose_hook e close_window) quando necessário.'''
