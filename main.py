@@ -16,13 +16,16 @@ A função recebe o data (que é o array de bytes que representa os pixels da im
 a posição x e y do pixel, e a cor do pixel (que é um inteiro representando a cor em formato ARGB).
 offset é o número de bytes que a posição do pixel ocupa na imagem, calculado multiplicando a posição y pelo tamanho da linha (pra pular as linhas anteriores),
 e somando a posição x multiplicada por 4 (porque cada pixel ocupa 4 bytes, um pra cada canal de cor).
-Depois, a função coloca a cor do pixel no data, usando bitwise OR pra garantir que o canal alpha seja sempre 255 (0xFF000000), e convertendo a cor para bytes usando to_bytes, com 4 bytes e little endian.'''
+Depois, a função coloca a cor do pixel no data, usando bitwise OR pra garantir que o canal alpha seja sempre 255 (0xFF000000), e convertendo a cor para bytes usando to_bytes, com 4 bytes e little endian.
+Precisei fazer uma verificação no offset, pra caso der ruim, ele não dar comportamento indefinido'''
 
 '''Pra ser bem sincero, eu pouco sei sobre essa questão do endianess, mas como eu tô usando little endian, caguei e coloquei little mesmo, e aparentemente tá funcionando, então tá de boa.
 Não entendi muito bem a questão do endianess, nem como essa função funciona em si. Infelizmente foi completamente vibecodada, mas pelo menos tá funcionando, então tá de boa.
 90%, Rafael Ferro. Tá aqui seus 10% de vibecoding, aproveite.'''
 def put_pixel(data, size_line, x, y, color):
     offset = (y * size_line) + (x * 4)
+    if offset < 0 or offset + 4 > len(data):
+        return
     data[offset:offset+4] = (0xFF000000 | color).to_bytes(4, 'little')
 
 '''Função pra desenhar as paradas na tela baseado na posição x, y, largura, altura, e cor
@@ -79,7 +82,6 @@ def main():
     Se o keycode for 65307 (que é o código da tecla ESC), eu chamo a função mlx_destroy_window pra destruir a janela, e depois chamo a função mlx_loop_exit pra sair do loop da mlx.'''
     def close_window(keycode, param):
         if keycode == 65307:  # ESC
-            ptr.mlx_destroy_window(mlx_ptr, win)
             ptr.mlx_loop_exit(mlx_ptr)
 
     '''Criando a imagem em memória com o tamanho total calculado. A imagem tem o tamanho do labirinto, pra não ter espaço extra, e pra ficar bonitinha.
