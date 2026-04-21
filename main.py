@@ -51,10 +51,13 @@ def main():
     config = validate_config.read_config_file()
     maze = map.MazeGenerator(config)
     maze.dfs(maze.maze[0])
+    maze.reset_visited()
     maze.dfs_resolution(maze.get_cell(config.entry[0], config.entry[1]), maze.get_cell(config.exit[0], config.exit[1]))
+    for cell in maze.visited_cells_resolution:
+        print(f"Visited cell: ({cell.x}, {cell.y})")
 
     margem_size = 10
-    wall_size = 4 if config.width < 50 else 1
+    wall_size = 10 if config.width < 50 else 1
     base_cell_size = max(config.width, config.height)
     cell_size = (900 - (2 * margem_size) - (base_cell_size + 1) * wall_size) // base_cell_size
 

@@ -80,7 +80,7 @@ class MazeGenerator():
                 return
 
             neighbor = random.choice(neighbors)
-            neighbor = self.get_random_neighboard(neighbors)
+            #neighbor = self.get_random_neighboard(neighbors)
             if not neighbor:
                 break
             self.remove_wall(cell, neighbor)
@@ -88,50 +88,48 @@ class MazeGenerator():
             self.dfs(neighbor)
         return
 
-    def wall_neighboard_verify(self, cell: Cell, neighboard: Cell) -> bool:
-        if cell.x > neighboard.x and cell.west and neighboard.east:
-            return True
-        if cell.x < neighboard.x and cell.east and neighboard.west:
-            return True
-        if cell.y > neighboard.y and cell.north and neighboard.south:
-            return True
-        if cell.y < neighboard.y and cell.south and neighboard.north:
-            return True
-        return False
+    def reset_visited(self) -> None:
+        for cell in self.maze:
+            cell.visited = False
 
     def get_neighboard_opened(self, cell: Cell, neigboards: list[Cell]) -> None:
         if cell.x + 1 < self.width:
             cell_e = self.get_cell(cell.x + 1, cell.y)
-            if cell_e.visited and self.wall_neighboard_verify(cell, cell_e):
+            if not cell_e.visited and not cell.east and not cell_e.west:
                 neigboards.append(cell_e)
         if cell.x - 1 >= 0 and cell.x - 1 < self.width:
             cell_w = self.get_cell(cell.x - 1, cell.y)
-            if cell_w.visited and self.wall_neighboard_verify(cell, cell_w):
+            if not cell_w.visited and not cell.west and not cell_w.east:
                 neigboards.append(cell_w)
         if cell.y + 1 < self.height:
             cell_s = self.get_cell(cell.x, cell.y + 1)
-            if cell_s.visited and self.wall_neighboard_verify(cell, cell_s):
+            if not cell_s.visited and not cell_s.north and not cell.south:
                 neigboards.append(cell_s)
         if cell.y - 1 >= 0 and cell.y - 1 < self.height:
             cell_n = self.get_cell(cell.x, cell.y - 1)
-            if cell_n.visited and self.wall_neighboard_verify(cell, cell_n):
+            if not cell_n.visited and not cell_n.south and not cell.north:
                 neigboards.append(cell_n)
 
-    def dfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> None:
-        cell_entry.visited = False
+    def dfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> bool:
+        cell_entry.visited = True
+        if cell_entry.x == cell_exit.x and cell_entry.y == cell_exit.y:
+            return True
         self.visited_cells_resolution.append(cell_entry)
         while True:
             neighbors = []
             self.get_neighboard_opened(cell_entry, neighbors)
 
             if not neighbors:
-                return
-
-            neighbor = self.get_random_neighboard(neighbors)
+                return False
+            for neighbor in neighbors:
+                if neighbor.x == cell_exit.x and neighbor.y == cell_exit.y:
+                    return True
+                if self.dfs_resolution(neighbor, cell_exit):
+                    return True
+            # neighbor = self.get_random_neighboard(neighbors)
             if not neighbor:
                 break
-            if cell_entry.x == cell_exit.x and cell_entry.y == cell_exit.y:
-                break
             neighbors.remove(neighbor)
-            self.dfs_resolution(neighbor)
-        return
+            if self.dfs_resolution(neighbor, cell_exit):
+                return True
+        return False
