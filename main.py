@@ -53,8 +53,6 @@ def main():
     maze.dfs(maze.maze[0])
     maze.reset_visited()
     maze.dfs_resolution(maze.get_cell(config.entry[0], config.entry[1]), maze.get_cell(config.exit[0], config.exit[1]))
-    for cell in maze.visited_cells_resolution:
-        print(f"Visited cell: ({cell.x}, {cell.y})")
 
     margem_size = 10
     wall_size = 10 if config.width < 50 else 1
