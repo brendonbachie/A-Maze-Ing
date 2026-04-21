@@ -59,6 +59,8 @@ def validate_config(config: dict) -> Configuration:
             elif key == "EXIT":
                 configuration.exit = parse_coordinates(value, configuration.width, configuration.height)
                 configs_required.remove("EXIT")
+                if configuration.entry == configuration.exit:
+                    raise ValueError("ENTRY and EXIT cannot be the same")
             elif key == "OUTPUT_FILE" and value.endswith(".txt"):
                 configuration.output_file = value
                 configs_required.remove("OUTPUT_FILE")
