@@ -19,6 +19,7 @@ class Configuration():
         self.output_file = ""
         #verificar se o valor é 'true' ou 'false' (perfect)
         self.perfect = None
+        self.seed = None
 
 #A parse_coordinates é necessária pra converter os valores do entry e exit pra tupla de ints, e validar que estão no formato correto. Se não tivere, vai dar erro
 def parse_coordinates(value: str, width: int, height: int) -> tuple:
@@ -50,6 +51,8 @@ def validate_config(config: dict) -> Configuration:
             if key == "WIDTH" and int(value) > 0:
                 configuration.width = int(value)
                 configs_required.remove("WIDTH")
+            elif key == "SEED" and int(value) > 0:
+                configuration.seed = int(value)
             elif key == "HEIGHT" and int(value) > 0:
                 configuration.height = int(value)
                 configs_required.remove("HEIGHT")

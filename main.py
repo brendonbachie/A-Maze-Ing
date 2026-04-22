@@ -50,9 +50,12 @@ def main():
     mlx_ptr = ptr.mlx_init()
     config = validate_config.read_config_file()
     maze = map.MazeGenerator(config)
+    maze.pattern()
     maze.dfs(maze.maze[0])
     maze.reset_visited()
-    maze.dfs_resolution(maze.get_cell(config.entry[0], config.entry[1]), maze.get_cell(config.exit[0], config.exit[1]))
+    maze.bfs_resolution(maze.get_cell(config.entry[0], config.entry[1]), maze.get_cell(config.exit[0], config.exit[1]))
+    entry_cell = maze.get_cell(config.entry[0], config.entry[1])
+    exit_cell = maze.get_cell(config.exit[0], config.exit[1])
 
     margem_size = 10
     wall_size = 10 if config.width < 50 else 1
@@ -67,18 +70,22 @@ def main():
     maze_pixel_width = pixel_width_wall + (2 * margem_size) + pixel_cells_width
     maze_pixel_height = pixel_height_wall + (2 * margem_size) + pixel_cells_height
 
-    win = ptr.mlx_new_window(mlx_ptr, maze_pixel_width, maze_pixel_height, "Maze Generator")
+    win = ptr.mlx_new_window(mlx_ptr, maze_pixel_width + 300, maze_pixel_height, "Maze Generator")
 
-    def close_window(keycode, param):
-        if keycode == 65307:  # ESC
-            ptr.mlx_loop_exit(mlx_ptr)
+    state = "generate"
+    generate_idx = 0
+    resolution_idx = 0
+
 
     image = ptr.mlx_new_image(mlx_ptr, maze_pixel_width, maze_pixel_height)
 
     data, _, size_line, _ = ptr.mlx_get_data_addr(image)
-   
     draw_rect(data, size_line, 0, 0, maze_pixel_width, maze_pixel_height, 0x000000, maze_pixel_width, maze_pixel_height)
-    
+
+    for cell in maze.pattern_cells:
+        cx = margem_size + cell.x * (cell_size + wall_size)
+        cy = margem_size + cell.y * (cell_size + wall_size)
+        draw_rect(data, size_line, cx, cy, cell_size, cell_size, 0x0000FF, maze_pixel_width, maze_pixel_height)
 
 
     # for cell in maze.maze:
@@ -114,8 +121,7 @@ def main():
     Vai tomar no cu tu e a MLX, copilot'''
 
     '''Mesmo problema do hook lá do expose, mas aqui é pra chamar a função de fechar a janela quando aperta ESC, que eu já expliquei lá em cima.'''
-    ptr.mlx_key_hook(win, close_window, None)
-
+    map.output_maze(maze)
 
 
     '''Essa função update vai fazer conseguir printar célula por célula. No momento ela só está printando a malha inteira, porque o DFS ainda não está
@@ -123,10 +129,6 @@ def main():
     Ela é basicamente o loop macio lá de cima, mas tem um indice que vai visitar todas as células da malha. Pra cada célula, ela faz o mesmo processo 
     de calcular a posição dos pixels do loop, a diferença aqui é que ela faz apenas de um, deixando o loop a cargo do loop_hook (mains um while(true) da vida)
     no final, ela usa um time.sleep pra segurar o loop por 0.05s e dar o efeito de frame por frame (usar timestap talvez?) e depois incrementa index pro próximo frame.'''
-    len_maze = len(maze.maze)
-    state = "generate"
-    generate_idx = 0
-    resolution_idx = 0
     
     def update(param):
         nonlocal generate_idx
@@ -155,6 +157,8 @@ def main():
                 return
 
         elif state == "resolution":
+            draw_rect(data, size_line, entry_cell.x * (cell_size + wall_size) + margem_size, entry_cell.y * (cell_size + wall_size) + margem_size, cell_size, cell_size, 0x00FF00, maze_pixel_width, maze_pixel_height)
+            draw_rect(data, size_line, exit_cell.x * (cell_size + wall_size) + margem_size, exit_cell.y * (cell_size + wall_size) + margem_size, cell_size, cell_size, 0xFF0000, maze_pixel_width, maze_pixel_height)
             cell = maze.visited_cells_resolution[resolution_idx]
             cx = margem_size + cell.x * (cell_size + wall_size)
             cy = margem_size + cell.y * (cell_size + wall_size)
@@ -170,12 +174,38 @@ def main():
             ptr.mlx_put_image_to_window(mlx_ptr, win, image, 0, 0)
             time.sleep(0.01)
             resolution_idx += 1
-            if resolution_idx >= len(maze.visited_cells_resolution):
+            if resolution_idx >= len(maze.visited_cells_resolution) - 1:
                 state = "done"
                 return
         elif state == "done":
             return
 
+    def key_options(keycode, param):
+        nonlocal state
+        nonlocal generate_idx
+        nonlocal resolution_idx
+
+        print ("Keycode: ", keycode)
+        if keycode == 65307:  # ESC
+            ptr.mlx_loop_exit(mlx_ptr)
+        if keycode == 114:  # R
+            print("Resetting the maze...")
+            maze = map.MazeGenerator(config)
+            maze.pattern()
+            maze.reset_visited()
+            maze.visited_cells = []
+            maze.visited_cells_resolution = []
+            maze.dfs(maze.maze[0])
+            maze.reset_visited()
+            maze.bfs_resolution(maze.get_cell(config.entry[0], config.entry[1]), maze.get_cell(config.exit[0], config.exit[1]))
+            image = ptr.mlx_new_image(mlx_ptr, maze_pixel_width, maze_pixel_height)
+            data, _, size_line, _ = ptr.mlx_get_data_addr(image)
+            draw_rect(data, size_line, 0, 0, maze_pixel_width, maze_pixel_height, 0x000000, maze_pixel_width, maze_pixel_height)
+            state = "generate"
+            generate_idx = 0
+            resolution_idx = 0
+            
+    ptr.mlx_key_hook(win, key_options, None)
     def expose_hook(param):
         ptr.mlx_put_image_to_window(mlx_ptr, win, image, 0, 0)
     '''Esse primeiro expose_hook é necessário pra mostrar a imagem inicial (que é só o fundo) na janela, e depois o loop_hook vai ficar chamando a função update '''
