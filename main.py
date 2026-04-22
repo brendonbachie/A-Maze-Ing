@@ -1,5 +1,5 @@
 import time
-
+import random
 import mlx
 import validate_config
 import map
@@ -58,7 +58,7 @@ def main():
     exit_cell = maze.get_cell(config.exit[0], config.exit[1])
 
     margem_size = 10
-    wall_size = 10 if config.width < 50 else 1
+    wall_size = 5 if config.width > 39 else 10
     base_cell_size = max(config.width, config.height)
     cell_size = (900 - (2 * margem_size) - (base_cell_size + 1) * wall_size) // base_cell_size
 
@@ -160,17 +160,20 @@ def main():
             draw_rect(data, size_line, entry_cell.x * (cell_size + wall_size) + margem_size, entry_cell.y * (cell_size + wall_size) + margem_size, cell_size, cell_size, 0x00FF00, maze_pixel_width, maze_pixel_height)
             draw_rect(data, size_line, exit_cell.x * (cell_size + wall_size) + margem_size, exit_cell.y * (cell_size + wall_size) + margem_size, cell_size, cell_size, 0xFF0000, maze_pixel_width, maze_pixel_height)
             cell = maze.visited_cells_resolution[resolution_idx]
+            cell1 = maze.visited_cells_resolution[resolution_idx + 1] if resolution_idx + 1 < len(maze.visited_cells_resolution) else None
             cx = margem_size + cell.x * (cell_size + wall_size)
             cy = margem_size + cell.y * (cell_size + wall_size)
             draw_rect(data, size_line, cx, cy, cell_size, cell_size, 0xAAAAAA, maze_pixel_width, maze_pixel_height)
-            if not cell.north:
+            
+            if cell.y > cell1.y:
                 draw_rect(data, size_line, cx, cy - wall_size, cell_size, wall_size, 0xAAAAAA, maze_pixel_width, maze_pixel_height)
-            if not cell.south:
+            if cell.y < cell1.y:
                 draw_rect(data, size_line, cx, cy + cell_size, cell_size, wall_size, 0xAAAAAA, maze_pixel_width, maze_pixel_height)
-            if not cell.west:
+            if cell.x > cell1.x:
                 draw_rect(data, size_line, cx - wall_size, cy, wall_size, cell_size, 0xAAAAAA, maze_pixel_width, maze_pixel_height)
-            if not cell.east:
+            if cell.x < cell1.x:
                 draw_rect(data, size_line, cx + cell_size, cy, wall_size, cell_size, 0xAAAAAA, maze_pixel_width, maze_pixel_height)
+            
             ptr.mlx_put_image_to_window(mlx_ptr, win, image, 0, 0)
             time.sleep(0.01)
             resolution_idx += 1
@@ -184,6 +187,10 @@ def main():
         nonlocal state
         nonlocal generate_idx
         nonlocal resolution_idx
+        nonlocal image
+        nonlocal maze
+        nonlocal data
+        nonlocal size_line
 
         print ("Keycode: ", keycode)
         if keycode == 65307:  # ESC
@@ -192,18 +199,51 @@ def main():
             print("Resetting the maze...")
             maze = map.MazeGenerator(config)
             maze.pattern()
-            maze.reset_visited()
             maze.visited_cells = []
             maze.visited_cells_resolution = []
             maze.dfs(maze.maze[0])
             maze.reset_visited()
             maze.bfs_resolution(maze.get_cell(config.entry[0], config.entry[1]), maze.get_cell(config.exit[0], config.exit[1]))
+            ptr.mlx_destroy_image(mlx_ptr, image)
             image = ptr.mlx_new_image(mlx_ptr, maze_pixel_width, maze_pixel_height)
             data, _, size_line, _ = ptr.mlx_get_data_addr(image)
             draw_rect(data, size_line, 0, 0, maze_pixel_width, maze_pixel_height, 0x000000, maze_pixel_width, maze_pixel_height)
+            for cell in maze.pattern_cells:
+                cx = margem_size + cell.x * (cell_size + wall_size)
+                cy = margem_size + cell.y * (cell_size + wall_size)
+                draw_rect(data, size_line, cx, cy, cell_size, cell_size, 0x0000FF, maze_pixel_width, maze_pixel_height)
             state = "generate"
             generate_idx = 0
             resolution_idx = 0
+        if keycode == 99:  # C
+            print("Changing the color...")
+            color1 = random.randint(0, 0xFFFFFF)
+            color2 = random.randint(0, 0xFFFFFF)
+            for cell in maze.visited_cells:
+                cx = margem_size + cell.x * (cell_size + wall_size)
+                cy = margem_size + cell.y * (cell_size + wall_size)
+                draw_rect(data, size_line, cx, cy, cell_size, cell_size, color1, maze_pixel_width, maze_pixel_height)
+                if not cell.north:
+                    draw_rect(data, size_line, cx, cy - wall_size, cell_size, wall_size, color1, maze_pixel_width, maze_pixel_height)
+                if not cell.south:
+                    draw_rect(data, size_line, cx, cy + cell_size, cell_size, wall_size, color1, maze_pixel_width, maze_pixel_height)
+                if not cell.west:
+                    draw_rect(data, size_line, cx - wall_size, cy, wall_size, cell_size, color1, maze_pixel_width, maze_pixel_height)
+                if not cell.east:
+                    draw_rect(data, size_line, cx + cell_size, cy, wall_size, cell_size, color1, maze_pixel_width, maze_pixel_height)
+            for cell in maze.visited_cells_resolution:
+                cx = margem_size + cell.x * (cell_size + wall_size)
+                cy = margem_size + cell.y * (cell_size + wall_size)
+                draw_rect(data, size_line, cx, cy, cell_size, cell_size, color2, maze_pixel_width, maze_pixel_height)
+                if not cell.north:
+                    draw_rect(data, size_line, cx, cy - wall_size, cell_size, wall_size, color2, maze_pixel_width, maze_pixel_height)
+                if not cell.south:
+                    draw_rect(data, size_line, cx, cy + cell_size, cell_size, wall_size, color2, maze_pixel_width, maze_pixel_height)
+                if not cell.west:
+                    draw_rect(data, size_line, cx - wall_size, cy, wall_size, cell_size, color2, maze_pixel_width, maze_pixel_height)
+                if not cell.east:
+                    draw_rect(data, size_line, cx + cell_size, cy, wall_size, cell_size, color2, maze_pixel_width, maze_pixel_height)
+            ptr.mlx_put_image_to_window(mlx_ptr, win, image, 0, 0)
             
     ptr.mlx_key_hook(win, key_options, None)
     def expose_hook(param):
