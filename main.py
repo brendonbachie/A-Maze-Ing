@@ -156,6 +156,7 @@ def draw_resolution_path(mazestate: MazeState, color):
 def draw_full_maze(app: MazeState, color):
     for cell in app.maze.visited_cells:
         draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, color, app.maze_pixel_width, app.maze_pixel_height)
+    draw_entry_exit(app.data, app.size_line, app, app.margem_size, app.wall_size, app.cell_size, app.maze_pixel_width, app.maze_pixel_height)
     app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
 
 def main():
@@ -183,6 +184,7 @@ def main():
             if app.generate_idx >= len(app.maze.visited_cells):
                 app.state = State.DONE
                 app.last_state = State.NOT_RESOLUTION
+            draw_entry_exit(app.data, app.size_line, app, app.margem_size, app.wall_size, app.cell_size, app.maze_pixel_width, app.maze_pixel_height)
             return
 
         elif app.state == State.RESOLUTION:
@@ -258,6 +260,7 @@ def main():
 
             if app.last_state == State.RESOLUTION_SHOWN and not app.last_state == State.NOT_RESOLUTION:
                 draw_resolution_path(app, app.path_color)
+                draw_entry_exit(app.data, app.size_line, app, app.margem_size, app.wall_size, app.cell_size, app.maze_pixel_width, app.maze_pixel_height)
             app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
 
         if keycode == 112:  # P
