@@ -178,28 +178,27 @@ class MazeGenerator():
                 cell = random.choice(self.maze)
                 wall = random.choice(walls)
                 if cell not in self.pattern_cells:
-                    if wall == "north" and cell.north:
+                    if wall == "north" and cell.north and not cell.y == 0:
                         cell.north = False
                         neighbor = self.get_cell(cell.x, cell.y - 1)
                         if neighbor and neighbor not in self.pattern_cells:
                             neighbor.south = False
-                    elif wall == "east" and cell.east:
+                    elif wall == "east" and cell.east and not cell.x == self.width - 1:
                         cell.east = False
                         neighbor = self.get_cell(cell.x + 1, cell.y)
                         if neighbor and neighbor not in self.pattern_cells:
                             neighbor.west = False
-                    elif wall == "south" and cell.south:
+                    elif wall == "south" and cell.south and not cell.y == self.height - 1:
                         cell.south = False
                         neighbor = self.get_cell(cell.x, cell.y + 1)
                         if neighbor and neighbor not in self.pattern_cells:
                             neighbor.north = False
-                    elif wall == "west" and cell.west:
+                    elif wall == "west" and cell.west and not cell.x == 0:
                         cell.west = False
                         neighbor = self.get_cell(cell.x - 1, cell.y)
                         if neighbor and neighbor not in self.pattern_cells:
                             neighbor.east = False
 
-@staticmethod
 def get_hex(cell: Cell) -> str:
     value = 0
     if cell.north:
@@ -213,7 +212,6 @@ def get_hex(cell: Cell) -> str:
 
     return format(value, "X")
 
-@staticmethod
 def get_direction(cell1: Cell, cell2: Cell) -> str:
     if cell1.x > cell2.x:
         return "W"
@@ -225,7 +223,6 @@ def get_direction(cell1: Cell, cell2: Cell) -> str:
         return "S"
     return ""
 
-@staticmethod
 def output_maze(maze: MazeGenerator) -> None:
     line = ""
     for y in range(maze.height):
@@ -238,7 +235,6 @@ def output_maze(maze: MazeGenerator) -> None:
     visited_cells = maze.visited_cells_resolution
     for i in range(len(visited_cells) - 1):
         line += get_direction(visited_cells[i], visited_cells[i + 1])
-    line += get_direction(visited_cells[-1], maze.get_cell(maze.exit[0], maze.exit[1]))
     namefile = maze.output_file
     with open(namefile, "w") as f:
         f.write(line)
