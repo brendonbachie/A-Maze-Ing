@@ -8,7 +8,7 @@
 # Criei uma classe Configuration para armazenar as configurações do labirinto
 
 class Configuration():
-    def __init__(self):
+    def __init__(self) -> None:
         # verificar se os valores são negativos (width e height)
         self.width = -1
         self.height = -1
@@ -20,16 +20,16 @@ class Configuration():
         # (output_file)
         self.output_file = ""
         # verificar se o valor é 'true' ou 'false' (perfect)
-        self.perfect = None
-        self.seed = None
+        self.perfect = True
+        self.seed: int | None = None
 
 
 # A parse_coordinates é necessária pra converter os valores do entry e exit
 # pra tupla de ints, e validar que estão no formato correto. Se não tiver,
 # vai dar erro
-def parse_coordinates(value: str, width: int, height: int) -> tuple:
-    x, y = value.split(",")
-    x, y = int(x.strip()), int(y.strip())
+def parse_coordinates(value: str, width: int, height: int) -> tuple[int, int]:
+    x_str, y_str = value.split(",")
+    x, y = int(x_str.strip()), int(y_str.strip())
     if x < 0 or x >= width:
         raise ValueError(f"X coordinate {x} is out of bounds for \
 width {width}")
@@ -41,7 +41,7 @@ height {height}")
 
 # A parser_config é necessária pra pegar o arquivo de configuração lido,
 # transformar num dicionário de chave e valor, e  retornar esse dicionário
-def parser_config(conf_file: str) -> dict:
+def parser_config(conf_file: str) -> dict[str, str]:
     confs = {}
     for line in conf_file.splitlines():
         if line.strip() and not line.startswith("#"):
@@ -56,7 +56,7 @@ def parser_config(conf_file: str) -> dict:
 # configuração, e retornar um objeto Configuration com os valores validados.
 # Se algum valor for inválido, ele vai imprimir o erro e retornar o objeto
 # Configuration com os valores padrão
-def validate_config(config: dict) -> Configuration:
+def validate_config(config: dict[str, str]) -> Configuration:
     configuration = Configuration()
     configs_required = ["WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE",
                         "PERFECT"]
