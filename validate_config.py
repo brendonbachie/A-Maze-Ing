@@ -9,29 +9,38 @@
 
 class Configuration():
     def __init__(self):
-        #verificar se os valores são negativos (width e height)
+        # verificar se os valores são negativos (width e height)
         self.width = -1
         self.height = -1
-        #verificar se os valores são negativos ou se estão fora dos limites do labirinto (entry e exit)
+        # verificar se os valores são negativos ou se estão fora dos limites
+        # do labirinto (entry e exit)
         self.entry = (-1, -1)
         self.exit = (-1, -1)
-        #verificar se o valor é um caminho válido e se a extensão é .txt (output_file)
+        # verificar se o valor é um caminho válido e se a extensão é .txt
+        # (output_file)
         self.output_file = ""
-        #verificar se o valor é 'true' ou 'false' (perfect)
+        # verificar se o valor é 'true' ou 'false' (perfect)
         self.perfect = None
         self.seed = None
 
-#A parse_coordinates é necessária pra converter os valores do entry e exit pra tupla de ints, e validar que estão no formato correto. Se não tivere, vai dar erro
+
+# A parse_coordinates é necessária pra converter os valores do entry e exit
+# pra tupla de ints, e validar que estão no formato correto. Se não tiver,
+# vai dar erro
 def parse_coordinates(value: str, width: int, height: int) -> tuple:
     x, y = value.split(",")
     x, y = int(x.strip()), int(y.strip())
     if x < 0 or x >= width:
-        raise ValueError(f"X coordinate {x} is out of bounds for width {width}")
+        raise ValueError(f"X coordinate {x} is out of bounds for \
+width {width}")
     if y < 0 or y >= height:
-        raise ValueError(f"Y coordinate {y} is out of bounds for height {height}")
+        raise ValueError(f"Y coordinate {y} is out of bounds for \
+height {height}")
     return (x, y)
 
-#A parser_config é necessária pra pegar o arquivo de configuração lido, transformar num dicionário de chave e valor, e  retornar esse dicionário
+
+# A parser_config é necessária pra pegar o arquivo de configuração lido,
+# transformar num dicionário de chave e valor, e  retornar esse dicionário
 def parser_config(conf_file: str) -> dict:
     confs = {}
     for line in conf_file.splitlines():
@@ -42,10 +51,15 @@ def parser_config(conf_file: str) -> dict:
             confs[key.strip()] = value.strip()
     return confs
 
-# a validate_config é necessária pra validar os valores do dicionário de configuração, e retornar um objeto Configuration com os valores validados. Se algum valor for inválido, ele vai imprimir o erro e retornar o objeto Configuration com os valores padrão 
+
+# a validate_config é necessária pra validar os valores do dicionário de
+# configuração, e retornar um objeto Configuration com os valores validados.
+# Se algum valor for inválido, ele vai imprimir o erro e retornar o objeto
+# Configuration com os valores padrão
 def validate_config(config: dict) -> Configuration:
     configuration = Configuration()
-    configs_required = ["WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE", "PERFECT"]
+    configs_required = ["WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE",
+                        "PERFECT"]
     try:
         for key, value in config.items():
             if key == "WIDTH" and int(value) > 0:
@@ -57,10 +71,14 @@ def validate_config(config: dict) -> Configuration:
                 configuration.height = int(value)
                 configs_required.remove("HEIGHT")
             elif key == "ENTRY":
-                configuration.entry = parse_coordinates(value, configuration.width, configuration.height)
+                configuration.entry = parse_coordinates(value,
+                                                        configuration.width,
+                                                        configuration.height)
                 configs_required.remove("ENTRY")
             elif key == "EXIT":
-                configuration.exit = parse_coordinates(value, configuration.width, configuration.height)
+                configuration.exit = parse_coordinates(value,
+                                                       configuration.width,
+                                                       configuration.height)
                 configs_required.remove("EXIT")
                 if configuration.entry == configuration.exit:
                     raise ValueError("ENTRY and EXIT cannot be the same")
@@ -73,15 +91,19 @@ def validate_config(config: dict) -> Configuration:
                 configuration.perfect = value.lower() == "true"
                 configs_required.remove("PERFECT")
             else:
-                raise ValueError(f"Wrong configuration")
+                raise ValueError("Wrong configuration")
         if configs_required:
-            raise ValueError(f"Missing configuration keys: {', '.join(configs_required)}")
+            raise ValueError(f"Missing configuration keys: \
+{', '.join(configs_required)}")
     except Exception as e:
         print(f"Error validating config: {e}")
         exit(1)
     return configuration
 
-#por fim, a read_config_file é necessária pra ler o arquivo de configuração, chamar as funções de parser e validação, e retornar o objeto Configuration com os valores validados.
+
+# por fim, a read_config_file é necessária pra ler o arquivo de configuração,
+# chamar as funções de parser e validação, e retornar o objeto Configuration
+# com os valores validados.
 def read_config_file() -> Configuration:
     conf_dict = {}
     conf = None
