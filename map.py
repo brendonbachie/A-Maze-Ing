@@ -238,3 +238,41 @@ def output_maze(maze: MazeGenerator) -> None:
     namefile = maze.output_file
     with open(namefile, "w") as f:
         f.write(line)
+
+
+'''Aqui vai ficar a questão do jogo, o teseu e o minotauro, a mudança de labirinto e as regras 
+
+A principio, Teseu tera 20 movimentos no labirinto e minotauro 10. Pela mitologia original, 
+Teseu matou o minotauro e saiu do labirinto. Então temos basicamente:
+- Teseu tem 20 movimentos
+- Minotauro tem 10 movimentos
+- Se Teseu não chegar no Minotauro em 20 movimentos, algumas paredes do labirinto se movem, mudando o layout
+- Se Teseu chegar no Minotauro, ele mata Minotauro, e aí pode sair do labirinto
+
+Então precisamos de:
+
+- Uma função para mover o Minotauro, aleatoriamente
+- Uma função para mover o Teseu até o Minotauro, temos o bfs pra isso pronto
+- Uma função para verificar se Teseu chegou no Minotauro
+- Uma função para verificar se Teseu saiu do labirinto
+- Uma função para mudar o layout do labirinto, movendo algumas paredes (talvez. Mudar paredes aparentemente é complicado, 
+então talvez a gente só mude o layout do labirinto, gerando um novo labirinto, e colocando Teseu e Minotauro em posições aleatórias)'''
+
+'''Vamos criar uma classe GameState para manter o estado do jogo, incluindo as posições de Teseu e Minotauro, o número de movimentos restantes, e o layout atual do labirinto.
+
+Sempre que o contador de movimentos de teseu e minotauro chegar a 0, o layout do labirinto muda, mas os personagens ficam no mesmo lugar. O layout do labirinto muda gerando um novo labirinto, 
+mas colocando Teseu e Minotauro no mesmo lugar, ou seja, se Teseu estava em (x, y), ele continua em (x, y) no novo labirinto, e o mesmo para o Minotauro. Então:
+
+- Quando chamarmos a função de mudança de layout, ela gera um novo labirinto, mas coloca Teseu e Minotauro nas mesmas posições que eles estavam antes da mudança.
+- Vamos alterar maze.entry e maze.exit para serem as posições de Teseu e Minotauro, respectivamente, para facilitar a resolução do labirinto usando o bfs.
+- A função de mudança de layout pode ser chamada tanto quando o contador de movimentos de Teseu chega a 0, quanto quando o contador de movimentos do Minotauro chega a 0.
+- A função de mudança de layout pode ser chamada também quando Teseu e Minotauro estão na mesma posição, ou seja, quando Teseu chega no Minotauro, ele mata o Minotauro, e aí pode sair do labirinto, 
+então, temos que mudar o labirinto, e abrindo uma saída pra Teseu. Pode ter uma celula aleatória pintada no mapa como a saída, e aí podemos forçar uma mudança de layout se Minotauro passar pela saída, 
+pra que ele sempre fique preso
+- Temos que fazer uma função para Minotauro andar aleatoriamente, e uma função para Teseu andar até o Minotauro usando o bfs. O bfs pode ser chamado a cada movimento de Teseu, pra ele sempre andar na direção
+do Minotauro, e o Minotauro pode andar aleatoriamente pelo labirinto. Dá pra pegar a posição de Minotauro, verificar celulas vizinhas sem parede, escolher uma aleatória e seguir, e diminuir o contador
+de movimentos do Minotauro. O mesmo para Teseu, mas usando o bfs pra escolher a direção. A cada movimento, temos que verificar se Teseu chegou no Minotauro, ou se Teseu saiu do labirinto, ou se
+Minotauro saiu do labirinto, e aí chamar a função de mudança de layout, ou terminar o jogo, dependendo do caso.
+
+Tenho que mudar a MiniLibX também, pra desenhar apenas uma celula a cada frame, ao invés de desenhar o caminho percorrido todo, pra dar a impressão de que os personagens estão andando pelo labirinto, e 
+não teletransportando, e aí a cada movimento, chamar a função de desenho, pra desenhar a nova posição dos personagens.'''

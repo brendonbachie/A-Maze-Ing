@@ -28,12 +28,16 @@ class MazeState():
         self.mlx_ptr = None
         self.win = None
         self.state = State.GENERATE
-        self.last_state = State.RESOLUTION_HIDDEN
+        self.last_state = State.NOT_RESOLUTION
         self.generate_idx = 0
         self.resolution_idx = 0
         self.image = None
         self.data = None
         self.size_line = None
+        self.path_color = 0x00CFFF
+        self.maze_color = 0x111827
+        self.pattern_color = 0x3B82F6
+        self.background_color = 0x374151
         
     def initialize_maze(self):
         self.config = validate_config.read_config_file()
@@ -159,12 +163,12 @@ def main():
     app = MazeState()
     app.initialize_maze()
     app.initialize_mlx()
-    draw_rect(app.data, app.size_line, 0, 0, app.maze_pixel_width, app.maze_pixel_height, 0x374151, app.maze_pixel_width, app.maze_pixel_height)
+    draw_rect(app.data, app.size_line, 0, 0, app.maze_pixel_width, app.maze_pixel_height, app.background_color, app.maze_pixel_width, app.maze_pixel_height)
 
     for cell in app.maze.pattern_cells:
         cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
         cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
-        draw_rect(app.data, app.size_line, cx, cy, app.cell_size, app.cell_size, 0x3B82F6, app.maze_pixel_width, app.maze_pixel_height)
+        draw_rect(app.data, app.size_line, cx, cy, app.cell_size, app.cell_size, app.pattern_color, app.maze_pixel_width, app.maze_pixel_height)
 
 
 
@@ -172,7 +176,7 @@ def main():
 
         if app.state == State.GENERATE:
             cell = app.maze.visited_cells[app.generate_idx]
-            draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, 0x111827, app.maze_pixel_width, app.maze_pixel_height)
+            draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, app.maze_color, app.maze_pixel_width, app.maze_pixel_height)
             app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
             time.sleep(0.01)
             app.generate_idx += 1
@@ -190,9 +194,9 @@ def main():
                 return
             cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
             cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
-            draw_rect(app.data, app.size_line, cx, cy, app.cell_size, app.cell_size, 0x00CFFF, app.maze_pixel_width, app.maze_pixel_height)
+            draw_rect(app.data, app.size_line, cx, cy, app.cell_size, app.cell_size, app.path_color, app.maze_pixel_width, app.maze_pixel_height)
             
-            draw_connection(app.data, app.size_line, cell, cell1, app.margem_size, app.wall_size, app.cell_size, 0x00CFFF, app.maze_pixel_width, app.maze_pixel_height)
+            draw_connection(app.data, app.size_line, cell, cell1, app.margem_size, app.wall_size, app.cell_size, app.path_color, app.maze_pixel_width, app.maze_pixel_height)
             
             app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
             time.sleep(0.01)
@@ -206,18 +210,17 @@ def main():
             return
         
         elif app.state == State.RESOLUTION_HIDDEN:
-            draw_full_maze(app, 0x111827)
+            draw_full_maze(app, app.maze_color)
             app.state = State.DONE
             return
 
         elif app.state == State.RESOLUTION_SHOWN:
-            draw_resolution_path(app, 0x00CFFF)
+            draw_resolution_path(app, app.path_color)
             app.state = State.DONE
             return
 
     def key_options(keycode, param):
 
-        print ("Keycode: ", keycode)
         if keycode == 65307:  # ESC
             app.ptr.mlx_loop_exit(app.mlx_ptr)
 
@@ -229,22 +232,33 @@ def main():
             app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)
             app.image = app.ptr.mlx_new_image(app.mlx_ptr, app.maze_pixel_width, app.maze_pixel_height)
             app.data, _, app.size_line, _ = app.ptr.mlx_get_data_addr(app.image)
-            draw_rect(app.data, app.size_line, 0, 0, app.maze_pixel_width, app.maze_pixel_height, 0x374151, app.maze_pixel_width, app.maze_pixel_height)
+            draw_rect(app.data, app.size_line, 0, 0, app.maze_pixel_width, app.maze_pixel_height, app.background_color, app.maze_pixel_width, app.maze_pixel_height)
             for cell in app.maze.pattern_cells:
-                draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, 0x0000FF, app.maze_pixel_width, app.maze_pixel_height)
+                draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, app.pattern_color, app.maze_pixel_width, app.maze_pixel_height)
             app.state = State.GENERATE
             app.last_state = State.NOT_RESOLUTION
             app.generate_idx = 0
             app.resolution_idx = 0
 
         if keycode == 99:  # C
+            if not app.state == State.DONE:
+                print("Cannot change color during animation.")
+                return
             print("Changing the color...")
-            color1 = random.randint(0, 0xFFFFFF)
-            color2 = random.randint(0, 0xFFFFFF)
+            app.maze_color = random.randint(0, 0xFFFFFF)
+            app.path_color = random.randint(0, 0xFFFFFF)
+            app.pattern_color = random.randint(0, 0xFFFFFF)
             for cell in app.maze.visited_cells:
-                draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, color1, app.maze_pixel_width, app.maze_pixel_height)
+                draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, app.maze_color, app.maze_pixel_width, app.maze_pixel_height)
 
-            draw_resolution_path(app, color2)
+            for cell in app.maze.pattern_cells:
+                cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
+                cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
+                draw_rect(app.data, app.size_line, cx, cy, app.cell_size, app.cell_size, app.pattern_color, app.maze_pixel_width, app.maze_pixel_height)
+
+            if app.last_state == State.RESOLUTION_SHOWN and not app.last_state == State.NOT_RESOLUTION:
+                draw_resolution_path(app, app.path_color)
+            app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
 
         if keycode == 112:  # P
             print("Hide/Show resolution path...")
@@ -267,13 +281,13 @@ def main():
         if keycode == 32:  # SPACE
             if app.state == State.GENERATE:
                 print("Skipping generation animation...")
-                draw_full_maze(app, 0x111827)
+                draw_full_maze(app, app.maze_color)
                 app.state = State.DONE
                 app.last_state = State.NOT_RESOLUTION
 
             elif app.state == State.RESOLUTION:
                 print("Skipping resolution animation...")
-                draw_resolution_path(app, 0x00CFFF)
+                draw_resolution_path(app, app.path_color)
                 app.state = State.DONE
                 app.last_state = State.RESOLUTION_SHOWN
                 

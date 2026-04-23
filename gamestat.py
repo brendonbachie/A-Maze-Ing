@@ -1,0 +1,19 @@
+'''Aqui vai ficar a questão do jogo, o teseu e o minotauro, a mudança de labirinto e as regras 
+
+A principio, Teseu tera 20 movimentos no labirinto e minotauro 10. Pela mitologia original, 
+Teseu matou o minotauro e saiu do labirinto. Então temos basicamente:
+- Teseu tem 20 movimentos
+- Minotauro tem 10 movimentos
+- Se Teseu não chegar no Minotauro em 20 movimentos, algumas paredes do labirinto se movem, mudando o layout
+- Se Teseu chegar no Minotauro, ele mata Minotauro, e aí pode sair do labirinto
+
+Então precisamos de:
+
+- Uma função para mover o Minotauro, aleatoriamente
+- Uma função para mover o Teseu até o Minotauro, temos o bfs pra isso pronto
+- Uma função para verificar se Teseu chegou no Minotauro
+- Uma função para verificar se Teseu saiu do labirinto
+- Uma função para mudar o layout do labirinto, movendo algumas paredes (talvez. Mudar paredes aparentemente é complicado, 
+então talvez a gente só mude o layout do labirinto, gerando um novo labirinto, e colocando Teseu e Minotauro em posições aleatórias)'''
+
+'''Vamos criar uma classe GameState para manter o estado do jogo, incluindo as posições de Teseu e Minotauro, o número de movimentos restantes, e o layout atual do labirinto.'''
