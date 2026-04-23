@@ -1,3 +1,0 @@
-Visited cell: (0, 0), Neighbor:(1, 0), Walls: N:False, S:True, W:True, E:True
-0, 1
-Visited cell: (0, 0), Neighbor:(0, 1), Walls: N:False, S:True, W:True, E:True
