@@ -33,6 +33,7 @@ def put_pixel(data, size_line, x, y, color):
     Se eu usar só a merda do put_pixel, vai aparecer só um pixel, então eu imprimo tipo uma matriz de pixels, 
     onde i vai ser a posição x e o final da largura, e j vai ser a posição y e o final da altura, e pra cada pixel nessa matriz eu chamo a função put_pixel pra colocar a cor correta.
     A função também tem que verificar se os pixels estão dentro dos limites da imagem, pra não estourar o array.'''
+
 def draw_rect(data, size_line, x, y, width, height, color, total_pixel_width, total_pixel_height):
     for i in range(x, x + width):
         if i >= total_pixel_width or i < 0:
@@ -41,7 +42,6 @@ def draw_rect(data, size_line, x, y, width, height, color, total_pixel_width, to
             if j >= total_pixel_height or j < 0:
                 continue
             put_pixel(data, size_line, i, j, color)
-
 
 def main():
 
@@ -52,6 +52,8 @@ def main():
     maze = map.MazeGenerator(config)
     maze.pattern()
     maze.dfs(maze.maze[0])
+    if not config.perfect:
+        maze.not_perfect_maze()
     maze.reset_visited()
     maze.bfs_resolution(maze.get_cell(config.entry[0], config.entry[1]), maze.get_cell(config.exit[0], config.exit[1]))
     entry_cell = maze.get_cell(config.entry[0], config.entry[1])
@@ -66,6 +68,7 @@ def main():
     pixel_height_wall = (config.height + 1) * wall_size
     pixel_cells_width = config.width * cell_size
     pixel_cells_height = config.height * cell_size
+
 
     maze_pixel_width = pixel_width_wall + (2 * margem_size) + pixel_cells_width
     maze_pixel_height = pixel_height_wall + (2 * margem_size) + pixel_cells_height

@@ -171,6 +171,35 @@ class MazeGenerator():
             current = parent[current]
         self.visited_cells_resolution.reverse()
 
+    def not_perfect_maze(self) -> None:
+        for i in range(self.width * self.height):
+            if i % 5 == 0:
+                walls = ["north", "east", "south", "west"]
+                cell = random.choice(self.maze)
+                wall = random.choice(walls)
+                if cell not in self.pattern_cells:
+                    if wall == "north" and cell.north:
+                        cell.north = False
+                        neighbor = self.get_cell(cell.x, cell.y - 1)
+                        if neighbor and neighbor not in self.pattern_cells:
+                            neighbor.south = False
+                    elif wall == "east" and cell.east:
+                        cell.east = False
+                        neighbor = self.get_cell(cell.x + 1, cell.y)
+                        if neighbor and neighbor not in self.pattern_cells:
+                            neighbor.west = False
+                    elif wall == "south" and cell.south:
+                        cell.south = False
+                        neighbor = self.get_cell(cell.x, cell.y + 1)
+                        if neighbor and neighbor not in self.pattern_cells:
+                            neighbor.north = False
+                    elif wall == "west" and cell.west:
+                        cell.west = False
+                        neighbor = self.get_cell(cell.x - 1, cell.y)
+                        if neighbor and neighbor not in self.pattern_cells:
+                            neighbor.east = False
+
+@staticmethod
 def get_hex(cell: Cell) -> str:
     value = 0
     if cell.north:
@@ -184,6 +213,7 @@ def get_hex(cell: Cell) -> str:
 
     return format(value, "X")
 
+@staticmethod
 def get_direction(cell1: Cell, cell2: Cell) -> str:
     if cell1.x > cell2.x:
         return "W"
@@ -195,6 +225,7 @@ def get_direction(cell1: Cell, cell2: Cell) -> str:
         return "S"
     return ""
 
+@staticmethod
 def output_maze(maze: MazeGenerator) -> None:
     line = ""
     for y in range(maze.height):
