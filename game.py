@@ -6,7 +6,7 @@ import map
 class GameState:
     def __init__(self, config):
         self.config = config
-        self.maze = map.Maze(self.config.width, self.config.height, self.config.seed)
+        #self.maze = map.Maze(self.config.width, self.config.height, self.config.seed)
         self.teseu_pos = self.config.entry
         self.minotauro_pos = self.config.exit
         self.teseu_moves = 20

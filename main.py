@@ -1,11 +1,11 @@
+import mlx
 import time
 import random
-import mlx
 import validate_config
 import map
 from enum import Enum
 import sys
-import game
+#import game
 
 class State(Enum):
     GENERATE = 1
@@ -148,7 +148,7 @@ def draw_full_maze(app: MazeState, color):
 
 def main():
 
-    sys.setrecursionlimit(15000)
+    sys.setrecursionlimit(300000)
 
     app = MazeState()
     app.initialize_maze()
@@ -217,7 +217,7 @@ def main():
 
         if keycode == 114:  # R
             print("Resetting the maze...")
-            app.maze = maze_generator(app.config)
+            app.maze = map.maze_generator(app.config)
             app.entry_cell = app.maze.get_cell(app.config.entry[0], app.config.entry[1])
             app.exit_cell = app.maze.get_cell(app.config.exit[0], app.config.exit[1])
             app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)
@@ -289,12 +289,12 @@ def main():
     app.ptr.mlx_expose_hook(app.win, expose_hook, None)
 
 
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 100, 0xAAAAAA, "Press R to reset the maze")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 120, 0xAAAAAA, "Press C to change the color")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 140, 0xAAAAAA, "Press P to hide/show resolution path")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 160, 0xAAAAAA, "Press S to solve the maze")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 180, 0xAAAAAA, "Press SPACE to skip animations")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 200, 0xAAAAAA, "Press ESC to quit")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 300, 0xAAAAAA, "Press ESC to quit")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 260, 0xAAAAAA, "Press S to solve the maze")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 140, 0xAAAAAA, "Press R to reset the maze")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 160, 0xAAAAAA, "Press C to change the color")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 180, 0xAAAAAA, "Press P to hide/show resolution path")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 280, 0xAAAAAA, "Press SPACE to skip animations")
 
     app.ptr.mlx_loop_hook(app.mlx_ptr, update, None)
 
