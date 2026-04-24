@@ -3,7 +3,7 @@ import random
 
 
 class Cell():
-    def __init__(self, x, y):
+    def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
         self.north = True
@@ -22,22 +22,22 @@ class MazeGenerator():
         self.output_file = configuration.output_file
         self.perfect = configuration.perfect
         self.seed = configuration.seed
-        self.maze = [Cell(x, y) for y in range(self.height) for x in range(
-            self.width)]
-        self.visited_cells = []
-        self.visited_cells_resolution = []
-        self.pattern_cells = []
+        self.maze = [Cell(x, y) for y in range(
+            self.height) for x in range(self.width)]
+        self.visited_cells: list[Cell] = []
+        self.visited_cells_resolution: list[Cell] = []
+        self.pattern_cells: list[Cell] = []
 
         if self.seed is not None:
             random.seed(self.seed)
 
-    def get_cell(self, x, y) -> Cell:
+    def get_cell(self, x: int, y: int) -> Cell:
         for cell in self.maze:
             if x == cell.x and y == cell.y:
                 return cell
-        return None
+        return Cell(-1, -1)
 
-    def pattern(self) -> list[Cell]:
+    def pattern(self) -> None:
         x = self.width // 2
         y = self.height // 2
 
@@ -73,7 +73,7 @@ class MazeGenerator():
             if not cell_n.visited:
                 neigboards.append(cell_n)
 
-    def get_random_neighboard(self, neigboards: list[Cell]) -> Cell:
+    def get_random_neighboard(self, neigboards: list[Cell]) -> Cell | None:
         new_neighboard: list[Cell] = []
         for neighboard in neigboards:
             if not neighboard.visited:
@@ -98,14 +98,12 @@ class MazeGenerator():
         cell.visited = True
         self.visited_cells.append(cell)
         while True:
-            neighbors = []
+            neighbors: list[Cell] = []
             self.get_neighboard(cell, neighbors)
-
             if not neighbors:
                 return
-
             neighbor = random.choice(neighbors)
-            #neighbor = self.get_random_neighboard(neighbors)
+            # neighbor = self.get_random_neighboard(neighbors)
             if not neighbor:
                 break
             self.remove_wall(cell, neighbor)
@@ -117,7 +115,10 @@ class MazeGenerator():
         for cell in self.maze:
             cell.visited = False
 
-    def get_neighboard_opened(self, cell: Cell, neigboards: list[Cell]) -> None:
+    def get_neighboard_opened(self,
+                              cell: Cell,
+                              neigboards: list[Cell]) -> None:
+
         if cell.x + 1 < self.width:
             cell_e = self.get_cell(cell.x + 1, cell.y)
             if not cell_e.visited and not cell.east and not cell_e.west:
@@ -140,7 +141,7 @@ class MazeGenerator():
         if cell_entry.x == cell_exit.x and cell_entry.y == cell_exit.y:
             return True
         self.visited_cells_resolution.append(cell_entry)
-        neighbors = []
+        neighbors: list[Cell] = []
         self.get_neighboard_opened(cell_entry, neighbors)
         if not neighbors:
             return False
@@ -152,13 +153,14 @@ class MazeGenerator():
 
     def bfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> None:
         cell_entry.visited = True
+        finish = Cell(-1, -1)
         queue = [cell_entry]
-        parent = {cell_entry: None}
+        parent = {cell_entry: finish}
         while queue:
             current = queue.pop(0)
             if current.x == cell_exit.x and current.y == cell_exit.y:
                 break
-            neighbors = []
+            neighbors: list[Cell] = []
             self.get_neighboard_opened(current, neighbors)
             for neighbor in neighbors:
                 if not neighbor.visited:
@@ -166,7 +168,7 @@ class MazeGenerator():
                     queue.append(neighbor)
                     parent[neighbor] = current
         current = cell_exit
-        while current is not None:
+        while current != finish:
             self.visited_cells_resolution.append(current)
             current = parent[current]
         self.visited_cells_resolution.reverse()
@@ -183,12 +185,15 @@ class MazeGenerator():
                         neighbor = self.get_cell(cell.x, cell.y - 1)
                         if neighbor and neighbor not in self.pattern_cells:
                             neighbor.south = False
-                    elif wall == "east" and cell.east and not cell.x == self.width - 1:
+                    # ver se essa quebra de east e south ta funcionando
+                    elif wall == "east" and cell.east and not (
+                                        cell.x == self.width - 1):
                         cell.east = False
                         neighbor = self.get_cell(cell.x + 1, cell.y)
                         if neighbor and neighbor not in self.pattern_cells:
                             neighbor.west = False
-                    elif wall == "south" and cell.south and not cell.y == self.height - 1:
+                    elif wall == "south" and cell.south and not (
+                                        cell.y == self.height - 1):
                         cell.south = False
                         neighbor = self.get_cell(cell.x, cell.y + 1)
                         if neighbor and neighbor not in self.pattern_cells:
@@ -201,13 +206,14 @@ class MazeGenerator():
 
     def bfs_game(self, start: Cell, goal: Cell) -> list[Cell]:
         visited = {(start.x, start.y)}
+        finish = (-1, -1)
         queue = [start]
-        parent = {(start.x, start.y): None}
+        parent = {(start.x, start.y): finish}
         while queue:
             current = queue.pop(0)
             if current.x == goal.x and current.y == goal.y:
                 break
-            neighbors = []
+            neighbors: list[Cell] = []
             self.get_neighboard_opened(current, neighbors)
             for neighbor in neighbors:
                 key = (neighbor.x, neighbor.y)
@@ -217,13 +223,14 @@ class MazeGenerator():
                     parent[key] = (current.x, current.y)
         path = []
         key = (goal.x, goal.y)
-        while key is not None:
+        while key != finish:
             path.append(self.get_cell(key[0], key[1]))
-            key = parent.get(key)
+            key = parent[key]
         path.reverse()
         return path
-    
-def maze_generator(config) -> MazeGenerator:
+
+
+def maze_generator(config: validate_config.Configuration) -> MazeGenerator:
     maze = MazeGenerator(config)
     if maze.width < 8 or maze.height < 8:
         print("The maze is too small to apply the pattern, skipping it...")
@@ -238,6 +245,7 @@ def maze_generator(config) -> MazeGenerator:
     maze.bfs_resolution(entry_cell, exit_cell)
     return maze
 
+
 def get_hex(cell: Cell) -> str:
     value = 0
     if cell.north:
@@ -251,16 +259,18 @@ def get_hex(cell: Cell) -> str:
 
     return format(value, "X")
 
+
 def get_direction(cell1: Cell, cell2: Cell) -> str:
     if cell1.x > cell2.x:
         return "W"
     elif cell1.x < cell2.x:
         return "E"
-    elif cell1.y > cell2.y: 
+    elif cell1.y > cell2.y:
         return "N"
     elif cell1.y < cell2.y:
         return "S"
     return ""
+
 
 def output_maze(maze: MazeGenerator) -> None:
     line = ""
@@ -270,13 +280,12 @@ def output_maze(maze: MazeGenerator) -> None:
             line += get_hex(cell)
         line += "\n"
     line += "\n"
-    line += (f"{maze.entry[0]},{maze.entry[1]}\n{maze.exit[0]},{maze.exit[1]}\n")
+    line += (f"{maze.entry[0]},{maze.entry[1]}\n\
+{maze.exit[0]},{maze.exit[1]}\n")
+
     visited_cells = maze.visited_cells_resolution
     for i in range(len(visited_cells) - 1):
         line += get_direction(visited_cells[i], visited_cells[i + 1])
     namefile = maze.output_file
     with open(namefile, "w") as f:
         f.write(line)
-
-
-
