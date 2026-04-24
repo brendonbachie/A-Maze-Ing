@@ -1,3 +1,38 @@
+import random
+import main
+import validate_config
+import map
+
+class GameState:
+    def __init__(self, config):
+        self.config = config
+        #self.maze = map.Maze(self.config.width, self.config.height, self.config.seed)
+        self.teseu_pos = self.config.entry
+        self.minotauro_pos = self.config.exit
+        self.teseu_moves = 20
+        self.minotauro_moves = 10
+        self. teseu_path = []
+        self.game_over = False
+        self.teseu_wins = False
+
+#cria objeto com configurações do jogo
+
+
+configs = validate_config.read_config_file()
+crete = GameState(configs)
+
+#criar o labirinto com teseu de entrada e minotauro como saída 
+maze = map.maze_generator(configs)
+crete.maze = maze
+crete.teseu_pos = configs.entry
+crete.minotauro_pos = configs.exit
+crete.teseu_path = maze.bfs_game(maze, crete.teseu_pos, crete.minotauro_pos)
+
+
+
+
+
+
 '''Aqui vai ficar a questão do jogo, o teseu e o minotauro, a mudança de labirinto e as regras 
 
 A principio, Teseu tera 20 movimentos no labirinto e minotauro 10. Pela mitologia original, 

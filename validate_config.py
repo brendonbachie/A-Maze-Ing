@@ -30,12 +30,6 @@ class Configuration():
 def parse_coordinates(value: str, width: int, height: int) -> tuple[int, int]:
     x_str, y_str = value.split(",")
     x, y = int(x_str.strip()), int(y_str.strip())
-    if x < 0 or x >= width:
-        raise ValueError(f"X coordinate {x} is out of bounds for \
-width {width}")
-    if y < 0 or y >= height:
-        raise ValueError(f"Y coordinate {y} is out of bounds for \
-height {height}")
     return (x, y)
 
 
@@ -115,6 +109,12 @@ def read_config_file() -> Configuration:
     except Exception as e:
         print(f"Error: {e}")
         exit(1)
+        if conf.x < 0 or conf.x >= conf.width:
+            raise ValueError(f"X coordinate {conf.x} is out of bounds for \
+            width {conf.width}")
+        if conf.y < 0 or conf.y >= conf.height:
+            raise ValueError(f"Y coordinate {conf.y} is out of bounds for \
+            height {conf.height}")
     return conf
 
 

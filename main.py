@@ -1,9 +1,11 @@
+import mlx
 import time
 import random
-import mlx
 import validate_config
 import map
 from enum import Enum
+import sys
+#import game
 
 class State(Enum):
     GENERATE = 1
@@ -41,7 +43,7 @@ class MazeState():
         
     def initialize_maze(self):
         self.config = validate_config.read_config_file()
-        self.maze = maze_generator(self.config)
+        self.maze = map.maze_generator(self.config)
         map.output_maze(self.maze)
         self.entry_cell = self.maze.get_cell(self.config.entry[0], self.config.entry[1])
         self.exit_cell = self.maze.get_cell(self.config.exit[0], self.config.exit[1])
@@ -53,21 +55,6 @@ class MazeState():
         self.image = self.ptr.mlx_new_image(self.mlx_ptr, self.maze_pixel_width, self.maze_pixel_height)
         self.data, _, self.size_line, _ = self.ptr.mlx_get_data_addr(self.image)
 
-def maze_generator(config) -> map.MazeGenerator:
-    maze = map.MazeGenerator(config)
-    if maze.width < 8 or maze.height < 8:
-        print("The maze is too small to apply the pattern, skipping it...")
-    else:
-        maze.pattern()
-    maze.dfs(maze.maze[0])
-    if not config.perfect:
-        maze.not_perfect_maze()
-    maze.reset_visited()
-    entry_cell = maze.get_cell(config.entry[0], config.entry[1])
-    exit_cell = maze.get_cell(config.exit[0], config.exit[1])
-    maze.bfs_resolution(entry_cell, exit_cell)
-    return maze
-
 def start_mlx(width, height) -> mlx.Mlx:
     ptr = mlx.Mlx()
     mlx_ptr = ptr.mlx_init()
@@ -76,7 +63,7 @@ def start_mlx(width, height) -> mlx.Mlx:
 
 def structure_dimensions(config):
     margem_size = 10
-    wall_size = 5 if config.width > 39 else 10
+    wall_size = 1 if config.width > 100 else 10
     base_cell_size = max(config.width, config.height)
     cell_size = (900 - (2 * margem_size) - (base_cell_size + 1) * wall_size) // base_cell_size
     return margem_size, wall_size, cell_size
@@ -161,6 +148,8 @@ def draw_full_maze(app: MazeState, color):
 
 def main():
 
+    sys.setrecursionlimit(300000)
+
     app = MazeState()
     app.initialize_maze()
     app.initialize_mlx()
@@ -228,7 +217,7 @@ def main():
 
         if keycode == 114:  # R
             print("Resetting the maze...")
-            app.maze = maze_generator(app.config)
+            app.maze = map.maze_generator(app.config)
             app.entry_cell = app.maze.get_cell(app.config.entry[0], app.config.entry[1])
             app.exit_cell = app.maze.get_cell(app.config.exit[0], app.config.exit[1])
             app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)
@@ -300,12 +289,12 @@ def main():
     app.ptr.mlx_expose_hook(app.win, expose_hook, None)
 
 
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 100, 0xAAAAAA, "Press R to reset the maze")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 120, 0xAAAAAA, "Press C to change the color")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 140, 0xAAAAAA, "Press P to hide/show resolution path")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 160, 0xAAAAAA, "Press S to solve the maze")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 180, 0xAAAAAA, "Press SPACE to skip animations")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 200, 0xAAAAAA, "Press ESC to quit")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 300, 0xAAAAAA, "Press ESC to quit")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 260, 0xAAAAAA, "Press S to solve the maze")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 140, 0xAAAAAA, "Press R to reset the maze")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 160, 0xAAAAAA, "Press C to change the color")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 180, 0xAAAAAA, "Press P to hide/show resolution path")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 280, 0xAAAAAA, "Press SPACE to skip animations")
 
     app.ptr.mlx_loop_hook(app.mlx_ptr, update, None)
 
