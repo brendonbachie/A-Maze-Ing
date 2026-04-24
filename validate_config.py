@@ -22,6 +22,9 @@ class Configuration():
         # verificar se o valor é 'true' ou 'false' (perfect)
         self.perfect = True
         self.seed: int | None = None
+        self.teseu: tuple[int, int] = (-1, -1)
+        self.minotauro: tuple[int, int] = (-1, -1)
+        self.gamemode = True
 
 
 # A parse_coordinates é necessária pra converter os valores do entry e exit
@@ -74,8 +77,14 @@ def validate_config(config: dict[str, str]) -> Configuration:
                                                        configuration.width,
                                                        configuration.height)
                 configs_required.remove("EXIT")
-                if configuration.entry == configuration.exit:
-                    raise ValueError("ENTRY and EXIT cannot be the same")
+            elif key == "TESEU":
+                configuration.teseu = parse_coordinates(value,
+                                                       configuration.width,
+                                                       configuration.height)
+            elif key == "MINOTAURO":
+                configuration.minotauro = parse_coordinates(value,
+                                                       configuration.width,
+                                                       configuration.height)
             elif key == "OUTPUT_FILE" and value.endswith(".txt"):
                 configuration.output_file = value
                 configs_required.remove("OUTPUT_FILE")
@@ -84,6 +93,10 @@ def validate_config(config: dict[str, str]) -> Configuration:
                     raise ValueError("PERFECT must be 'True' or 'False'")
                 configuration.perfect = value.lower() == "true"
                 configs_required.remove("PERFECT")
+            elif key == "GAMEMODE":
+                if value.lower() not in ["true", "false"]:
+                    raise ValueError("GAMEMODE must be 'True' or 'False'")
+                configuration.gamemode = value.lower() == "true"
             else:
                 raise ValueError("Wrong configuration")
         if configs_required:
