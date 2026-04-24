@@ -236,9 +236,11 @@ def main():
                 print("Cannot change color during animation.")
                 return
             print("Changing the color...")
-            app.maze_color = random.randint(0, 0xFFFFFF)
-            app.path_color = random.randint(0, 0xFFFFFF)
-            app.pattern_color = random.randint(0, 0xFFFFFF)
+            app.maze_color = random.randint(0x800000, 0xAAAAAA)
+            app.path_color = random.randint(0x444445, 0x799999)
+            app.pattern_color = random.randint(0xCCCCCC, 0xFFFFFF)
+            app.background_color = random.randint(0, 0x444444)
+            draw_rect(app.data, app.size_line, 0, 0, app.maze_pixel_width, app.maze_pixel_height, app.background_color, app.maze_pixel_width, app.maze_pixel_height)
             for cell in app.maze.visited_cells:
                 draw_maze_cell(app.data, app.size_line, cell, app.margem_size, app.wall_size, app.cell_size, app.maze_color, app.maze_pixel_width, app.maze_pixel_height)
 
