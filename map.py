@@ -13,7 +13,6 @@ class Cell():
         self.visited = False
 
 
-
 class MazeGenerator():
     def __init__(self, configuration: validate_config.Configuration):
         self.width = configuration.width
@@ -23,7 +22,8 @@ class MazeGenerator():
         self.output_file = configuration.output_file
         self.perfect = configuration.perfect
         self.seed = configuration.seed
-        self.maze = [Cell(x, y) for y in range(self.height) for x in range(self.width)]
+        self.maze = [Cell(x, y) for y in range(self.height) for x in range(
+            self.width)]
         self.visited_cells = []
         self.visited_cells_resolution = []
         self.pattern_cells = []
