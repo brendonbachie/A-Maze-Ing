@@ -24,7 +24,7 @@ class MazeGenerator():
         self.seed = configuration.seed
         self.gamemode = configuration.gamemode
         self.teseu = configuration.teseu
-        self.minotauro = configuration.minotauro
+        self.minotaur = configuration.minotaur
         self.maze = [Cell(x, y) for y in range(
             self.height) for x in range(self.width)]
         self.visited_cells: list[Cell] = []
@@ -248,7 +248,10 @@ def maze_generator(config: validate_config.Configuration) -> MazeGenerator:
     maze.bfs_resolution(entry_cell, exit_cell)
     return maze
 
-def game_maze_generator(config: validate_config.Configuration) -> MazeGenerator:
+
+def game_maze_generator(
+        config: validate_config.Configuration) -> MazeGenerator:
+
     maze = MazeGenerator(config)
     if maze.width < 8 or maze.height < 8:
         print("The maze is too small to apply the pattern, skipping it...")

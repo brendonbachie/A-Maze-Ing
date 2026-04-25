@@ -23,7 +23,7 @@ class Configuration():
         self.perfect = True
         self.seed: int | None = None
         self.teseu: tuple[int, int] = (-1, -1)
-        self.minotauro: tuple[int, int] = (-1, -1)
+        self.minotaur: tuple[int, int] = (-1, -1)
         self.gamemode = True
 
 
@@ -78,13 +78,16 @@ def validate_config(config: dict[str, str]) -> Configuration:
                                                        configuration.height)
                 configs_required.remove("EXIT")
             elif key == "TESEU":
-                configuration.teseu = parse_coordinates(value,
-                                                       configuration.width,
-                                                       configuration.height)
-            elif key == "MINOTAURO":
-                configuration.minotauro = parse_coordinates(value,
-                                                       configuration.width,
-                                                       configuration.height)
+                configuration.teseu = parse_coordinates(
+                                                        value,
+                                                        configuration.width,
+                                                        configuration.height
+                                                        )
+            elif key == "MINOTAUR":
+                configuration.minotaur = parse_coordinates(value,
+                                                           configuration.width,
+                                                           configuration.height
+                                                           )
             elif key == "OUTPUT_FILE" and value.endswith(".txt"):
                 configuration.output_file = value
                 configs_required.remove("OUTPUT_FILE")
