@@ -2,7 +2,7 @@ import mlx
 import time
 import random
 import validate_config
-from validate_config import Configuration
+from validate_config import Configuration as cfg
 import map
 from map import Cell
 from enum import Enum
@@ -23,349 +23,218 @@ class State(Enum):
 
 
 class MazeState():
-    def __init__(self):
-        self.config = None
-        self.maze = None
-        self.crete_maze = None
-        self.entry_cell = None
-        self.exit_cell = None
-        self.teseu_cell = None
-        self.minotaur_cell = None
-        self.margem_size = None
-        self.wall_size = None
-        self.cell_size = None
-        self.maze_pixel_width = None
-        self.maze_pixel_height = None
-        self.ptr = None
-        self.mlx_ptr = None
-        self.win = None
+    def __init__(self) -> None:
+        self.config: cfg = validate_config.read_config_file()
+        self.maze: map.MazeGenerator = map.maze_generator(self.config)
+        self.crete_maze: game.GameState = game.generate_game_state(self.config)
+        self.entry_cell: Cell = Cell(-1, -1)
+        self.exit_cell: Cell = Cell(-1, -1)
+        self.teseu_cell: Cell = Cell(-1, -1)
+        self.minotaur_cell: Cell = Cell(-1, -1)
+        self.margem_size: int = 0
+        self.wall_size: int = 0
+        self.cell_size: int = 0
+        self.maze_pixel_width: int = 0
+        self.maze_pixel_height: int = 0
+        self.ptr: mlx.Mlx = mlx.Mlx()  # type: ignore
+        self.mlx_ptr: mlx.Mlx = self.ptr.mlx_init()  # type: ignore
+        self.win: mlx.Mlx | None = None
         self.state = State.GAME
         self.last_state = State.NOT_RESOLUTION
         self.generate_idx = 0
         self.resolution_idx = 0
         self.resolution_idx_t = 0
         self.resolution_idx_m = 0
-        self.image = None
-        self.data = None
-        self.size_line = None
+        self.image: mlx.Mlx | None = None
+        self.data: bytearray = bytearray()
+        self.size_line: int = 0
         self.path_color = 0x00CFFF
         self.maze_color = 0x111827
         self.pattern_color = 0x3B82F6
         self.background_color = 0x374151
 
     def initialize_maze(self) -> None:
-        self.config = validate_config.read_config_file()
-        self.maze = map.maze_generator(self.config)
         map.output_maze(self.maze)
-        self.entry_cell = self.maze.get_cell(self.config.entry[0],
-                                             self.config.entry[1])
-        self.exit_cell = self.maze.get_cell(self.config.exit[0],
-                                            self.config.exit[1])
+        self.entry_cell = self.maze.entry
+        self.exit_cell = self.maze.exit
 
     def initialize_mlx(self) -> None:
         self.margem_size, self.wall_size, self.cell_size = (
             structure_dimensions(self.config))
 
         self.maze_pixel_width, self.maze_pixel_height = total_pixel_dimensions(
-            self.config, self.margem_size, self.wall_size, self.cell_size)
-
-        self.ptr, self.mlx_ptr, self.win = start_mlx(
-            self.maze_pixel_width, self.maze_pixel_height)
+            self.config, self)
 
         self.image = self.ptr.mlx_new_image(
-            self.mlx_ptr, self.maze_pixel_width, self.maze_pixel_height)
+            self.mlx_ptr, self.maze_pixel_width,
+            self.maze_pixel_height)  # type: ignore
 
         self.data, _, self.size_line, _ = self.ptr.mlx_get_data_addr(
-            self.image)
+            self.image)  # type: ignore
 
 
-def start_mlx(width, height) -> mlx.Mlx:
-    ptr: mlx.Mlx = mlx.Mlx()
-    mlx_ptr: mlx.Mlx = ptr.mlx_init()
-    win: mlx.Mlx = ptr.mlx_new_window(mlx_ptr, width + 500,
-                                      height, "Maze Generator")
-    return ptr, mlx_ptr, win
-
-
-def structure_dimensions(config: Configuration) -> tuple[int, int, int]:
-    margem_size = 10
-    wall_size = 1 if config.width > 100 else 10
+def structure_dimensions(config: cfg) -> tuple[int, int, int]:
+    margem_size = 5
+    wall_size = 1 if config.width > 100 else 4
     base_cell_size = max(config.width, config.height)
     cell_size = (900 - (2 * margem_size) - (
         base_cell_size + 1) * wall_size) // base_cell_size
     return margem_size, wall_size, cell_size
 
 
-def total_pixel_dimensions(config: Configuration,
-                           margem_size: int,
-                           wall_size: int, cell_size: int) -> tuple[int, int]:
+def total_pixel_dimensions(config: cfg, mlx: MazeState) -> tuple[int, int]:
 
-    pixel_width_wall = (config.width + 1) * wall_size
-    pixel_height_wall = (config.height + 1) * wall_size
-    pixel_cells_width = config.width * cell_size
-    pixel_cells_height = config.height * cell_size
-    maze_pixel_width = pixel_width_wall + (2 * margem_size) + pixel_cells_width
+    pixel_width_wall = (config.width + 1) * mlx.wall_size
+    pixel_height_wall = (config.height + 1) * mlx.wall_size
+    pixel_cells_width = config.width * mlx.cell_size
+    pixel_cells_height = config.height * mlx.cell_size
+    maze_pixel_width = (
+        pixel_width_wall + (2 * mlx.margem_size) + pixel_cells_width)
     maze_pixel_height = pixel_height_wall + (
-        2 * margem_size) + pixel_cells_height
+        2 * mlx.margem_size) + pixel_cells_height
 
     return maze_pixel_width, maze_pixel_height
 
 
-def put_pixel(data: bytearray,
-              size_line: int,
-              x: int, y: int,
-              color: int) -> None:
-
-    offset = (y * size_line) + (x * 4)
-    if offset < 0 or offset + 4 > len(data):
+def put_pixel(app: MazeState, x: int, y: int, color: int) -> None:
+    offset = (y * app.size_line) + (x * 4)
+    if offset < 0 or offset + 4 > len(app.data):
         return
-    data[offset:offset+4] = (0xFF000000 | color).to_bytes(4, 'little')
+    app.data[offset:offset+4] = (0xFF000000 | color).to_bytes(4, 'little')
 
 
-def draw_rect(data: bytearray,
-              size_line: int,
-              x: int,
-              y: int,
-              width: int,
-              height: int,
-              color: int,
-              total_pixel_width: int,
-              total_pixel_height: int) -> None:
-
+def draw_rect(app: MazeState, x: int, y: int,
+              width: int, height: int, color: int) -> None:
     for i in range(x, x + width):
-        if i >= total_pixel_width or i < 0:
+        if i >= app.maze_pixel_width or i < 0:
             continue
         for j in range(y, y + height):
-            if j >= total_pixel_height or j < 0:
+            if j >= app.maze_pixel_height or j < 0:
                 continue
-            put_pixel(data, size_line, i, j, color)
+            put_pixel(app, i, j, color)
 
 
-def draw_cell(data: bytearray, size_line: int,
-              cell: Cell, margem_size: int,
-              wall_size: int, cell_size: int,
-              color: int, total_pixel_width: int,
-              total_pixel_height: int) -> None:
+def draw_cell(app: MazeState, cell: Cell, color: int) -> None:
 
-    cx = margem_size + cell.x * (cell_size + wall_size)
-    cy = margem_size + cell.y * (cell_size + wall_size)
-    draw_rect(data, size_line,
-              cx, cy, cell_size,
-              cell_size, color,
-              total_pixel_width, total_pixel_height)
+    cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
+    cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
+    draw_rect(app, cx, cy, app.cell_size, app.cell_size, color)
 
 
-def draw_connection(data: bytearray,
-                    size_line: int, cell1: Cell,
-                    cell2: Cell, margem_size: int,
-                    wall_size: int, cell_size: int,
-                    color: int, total_pixel_width: int,
-                    total_pixel_height: int) -> None:
+def draw_connection(app: MazeState, cell1: Cell,
+                    cell2: Cell, color: int) -> None:
 
-    cx1 = margem_size + cell1.x * (cell_size + wall_size)
-    cy1 = margem_size + cell1.y * (cell_size + wall_size)
+    cx1 = app.margem_size + cell1.x * (app.cell_size + app.wall_size)
+    cy1 = app.margem_size + cell1.y * (app.cell_size + app.wall_size)
 
     if cell1.y > cell2.y:
-        draw_rect(data, size_line,
-                  cx1, cy1 - wall_size,
-                  cell_size, wall_size,
-                  color, total_pixel_width,
-                  total_pixel_height)
+        draw_rect(app, cx1, cy1 - app.wall_size, app.cell_size,
+                  app.wall_size, color)
 
     if cell1.y < cell2.y:
-        draw_rect(data, size_line,
-                  cx1, cy1 + cell_size,
-                  cell_size, wall_size, color,
-                  total_pixel_width, total_pixel_height)
+        draw_rect(app, cx1, cy1 + app.cell_size, app.cell_size,
+                  app.wall_size, color)
 
     if cell1.x > cell2.x:
-        draw_rect(data, size_line,
-                  cx1 - wall_size,
-                  cy1, wall_size,
-                  cell_size, color,
-                  total_pixel_width, total_pixel_height)
+        draw_rect(app, cx1 - app.wall_size, cy1, app.wall_size,
+                  app.cell_size, color)
 
     if cell1.x < cell2.x:
-        draw_rect(data, size_line, cx1 + cell_size,
-                  cy1, wall_size, cell_size,
-                  color, total_pixel_width, total_pixel_height)
+        draw_rect(app, cx1 + app.cell_size, cy1, app.wall_size,
+                  app.cell_size, color)
 
 
-def draw_maze_cell(data: bytearray, size_line: int,
-                   cell: Cell, margem_size: int,
-                   wall_size: int, cell_size: int,
-                   color: int, total_pixel_width: int,
-                   total_pixel_height: int) -> None:
+def draw_maze_cell(app: MazeState, cell: Cell, color: int) -> None:
 
-    cx = margem_size + cell.x * (cell_size + wall_size)
-    cy = margem_size + cell.y * (cell_size + wall_size)
-    draw_cell(data, size_line, cell,
-              margem_size, wall_size,
-              cell_size, color,
-              total_pixel_width, total_pixel_height)
+    cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
+    cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
+    draw_cell(app, cell, color)
 
     if not cell.north:
-        draw_rect(data, size_line,
-                  cx, cy - wall_size,
-                  cell_size, wall_size,
-                  color, total_pixel_width,
-                  total_pixel_height)
+        draw_rect(app, cx, cy - app.wall_size, app.cell_size,
+                  app.wall_size, color)
 
     if not cell.south:
-        draw_rect(data, size_line,
-                  cx, cy + cell_size,
-                  cell_size, wall_size,
-                  color, total_pixel_width,
-                  total_pixel_height)
+        draw_rect(app, cx, cy + app.cell_size, app.cell_size,
+                  app.wall_size, color)
 
     if not cell.west:
-        draw_rect(data, size_line,
-                  cx - wall_size, cy,
-                  wall_size, cell_size,
-                  color, total_pixel_width,
-                  total_pixel_height)
+        draw_rect(app, cx - app.wall_size, cy, app.wall_size,
+                  app.cell_size, color)
 
     if not cell.east:
-        draw_rect(data, size_line,
-                  cx + cell_size,
-                  cy, wall_size,
-                  cell_size, color,
-                  total_pixel_width,
-                  total_pixel_height)
+        draw_rect(app, cx + app.cell_size, cy, app.wall_size,
+                  app.cell_size, color)
 
 
-def draw_entry_exit(data: bytearray, size_line: int,
-                    mazestate: MazeState, margem_size: int,
-                    wall_size: int, cell_size: int,
-                    total_pixel_width: int, total_pixel_height: int) -> None:
-
-    cx_entry = margem_size + mazestate.entry_cell.x * (cell_size + wall_size)
-    cy_entry = margem_size + mazestate.entry_cell.y * (cell_size + wall_size)
-    cx_exit = margem_size + mazestate.exit_cell.x * (cell_size + wall_size)
-    cy_exit = margem_size + mazestate.exit_cell.y * (cell_size + wall_size)
-    draw_rect(data, size_line,
-              cx_entry, cy_entry,
-              cell_size, cell_size,
-              0x00FF00, total_pixel_width, total_pixel_height)
-
-    draw_rect(data, size_line,
-              cx_exit, cy_exit,
-              cell_size, cell_size,
-              0xFF0000, total_pixel_width, total_pixel_height)
+def draw_entry_exit(app: MazeState) -> None:
+    draw_cell(app, app.entry_cell, 0x00FF00)
+    draw_cell(app, app.exit_cell, 0xFF0000)
 
 
-def draw_resolution_path(mazestate: MazeState, color: int) -> None:
-    for cell, cell1 in zip(mazestate.maze.visited_cells_resolution,
-                           mazestate.maze.visited_cells_resolution[1:]):
-
-        cx = mazestate.margem_size + cell.x * (
-            mazestate.cell_size + mazestate.wall_size)
-
-        cy = mazestate.margem_size + cell.y * (
-            mazestate.cell_size + mazestate.wall_size)
-
-        draw_rect(mazestate.data, mazestate.size_line,
-                  cx, cy, mazestate.cell_size,
-                  mazestate.cell_size, color,
-                  mazestate.maze_pixel_width,
-                  mazestate.maze_pixel_height)
-
-        draw_connection(mazestate.data, mazestate.size_line,
-                        cell, cell1, mazestate.margem_size,
-                        mazestate.wall_size, mazestate.cell_size,
-                        color, mazestate.maze_pixel_width,
-                        mazestate.maze_pixel_height)
-
-    draw_entry_exit(mazestate.data, mazestate.size_line,
-                    mazestate, mazestate.margem_size,
-                    mazestate.wall_size, mazestate.cell_size,
-                    mazestate.maze_pixel_width,
-                    mazestate.maze_pixel_height)
-
-    mazestate.ptr.mlx_put_image_to_window(
-        mazestate.mlx_ptr, mazestate.win,
-        mazestate.image, 0, 0)
+def draw_resolution_path(app: MazeState, color: int) -> None:
+    for cell, cell1 in zip(app.maze.visited_cells_resolution,
+                           app.maze.visited_cells_resolution[1:]):
+        draw_cell(app, cell, color)
+        draw_connection(app, cell, cell1, color)
+    draw_entry_exit(app)
+    app.ptr.mlx_put_image_to_window(
+        app.mlx_ptr, app.win,
+        app.image, 0, 0)  # type: ignore
 
 
-def draw_full_maze(app: MazeState, color):
+def draw_full_maze(app: MazeState, color: int) -> None:
     for cell in app.maze.visited_cells:
-        draw_maze_cell(app.data, app.size_line,
-                       cell, app.margem_size, app.wall_size,
-                       app.cell_size, color, app.maze_pixel_width,
-                       app.maze_pixel_height)
+        draw_maze_cell(app, cell, color)
 
-    draw_entry_exit(app.data, app.size_line,
-                    app, app.margem_size, app.wall_size,
-                    app.cell_size, app.maze_pixel_width,
-                    app.maze_pixel_height)
-
-    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
+    draw_entry_exit(app)
+    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
+                                    app.image, 0, 0)  # type: ignore
 
 
-def draw_full_maze_game(app: MazeState, color):
+def draw_full_maze_game(app: MazeState, color: int) -> None:
     for cell in app.crete_maze.maze.visited_cells:
-        draw_maze_cell(app.data, app.size_line, cell,
-                       app.margem_size, app.wall_size,
-                       app.cell_size, color, app.maze_pixel_width,
-                       app.maze_pixel_height)
-
-    draw_cell(app.data, app.size_line, app.teseu_cell,
-              app.margem_size, app.wall_size,
-              app.cell_size, 0x00FF00, app.maze_pixel_width,
-              app.maze_pixel_height)
-
-    draw_cell(app.data, app.size_line, app.exit_cell,
-              app.margem_size, app.wall_size, app.cell_size,
-              0xFF0000, app.maze_pixel_width, app.maze_pixel_height)
-
-    draw_cell(app.data, app.size_line, app.minotaur_cell,
-              app.margem_size, app.wall_size, app.cell_size,
-              0xFFFF00, app.maze_pixel_width, app.maze_pixel_height)
-
-    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
+        draw_maze_cell(app, cell, color)
+    draw_cell(app, app.teseu_cell, 0x00FF00)
+    draw_cell(app, app.exit_cell, 0xFF0000)
+    draw_cell(app, app.minotaur_cell, 0xFFFF00)
+    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
+                                    app.image, 0, 0)  # type: ignore
 
 
-def main():
+def main() -> None:
 
     sys.setrecursionlimit(300000)
 
     app = MazeState()
     app.initialize_maze()
-    app.initialize_mlx()
-    draw_rect(app.data, app.size_line, 0, 0,
+    app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width,
+                                     app.maze_pixel_height,
+                                     "Maze Generator")  # type: ignore
+    draw_rect(app, 0, 0,
               app.maze_pixel_width, app.maze_pixel_height,
-              app.background_color, app.maze_pixel_width,
-              app.maze_pixel_height)
+              app.background_color)
 
     def initialize_game_maze(app: MazeState) -> None:
-        crete = game.generate_game_state(app.config)
-        app.crete_maze = crete
-        app.teseu_cell = crete.teseu_pos
-        app.minotaur_cell = crete.minotaur_pos
+        app.teseu_cell = app.crete_maze.teseu_pos
+        app.minotaur_cell = app.crete_maze.minotaur_pos
 
-    def expose_hook(_) -> None:
-        app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win, app.image, 0, 0)
+    def expose_hook(_: None) -> None:
+        app.ptr.mlx_put_image_to_window(app.mlx_ptr,
+                                        app.win, app.image,
+                                        0, 0)  # type: ignore
 
     for cell in app.maze.pattern_cells:
-        cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
-        cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
-        draw_rect(app.data, app.size_line, cx, cy,
-                  app.cell_size, app.cell_size,
-                  app.pattern_color, app.maze_pixel_width,
-                  app.maze_pixel_height)
-
+        draw_cell(app, cell, app.pattern_color)
     initialize_game_maze(app)
 
     # app.crete_maze.minotaur_path =
     # app.crete_maze.maze.bfs_game(app.minotaur_cell, app.exit_cell)
-    def update(_) -> None:
+    def update(_: None) -> None:
 
         if app.state == State.GENERATE:
             cell = app.maze.visited_cells[app.generate_idx]
-            draw_maze_cell(app.data, app.size_line,
-                           cell, app.margem_size, app.wall_size,
-                           app.cell_size, app.maze_color,
-                           app.maze_pixel_width, app.maze_pixel_height)
+            draw_maze_cell(app, cell, app.maze_color)
 
             expose_hook(None)
             time.sleep(0.01)
@@ -373,18 +242,11 @@ def main():
             if app.generate_idx >= len(app.maze.visited_cells):
                 app.state = State.DONE
                 app.last_state = State.NOT_RESOLUTION
-            draw_entry_exit(app.data, app.size_line,
-                            app, app.margem_size,
-                            app.wall_size, app.cell_size,
-                            app.maze_pixel_width,
-                            app.maze_pixel_height)
+            draw_entry_exit(app)
             return
 
         elif app.state == State.RESOLUTION:
-            draw_entry_exit(app.data, app.size_line, app,
-                            app.margem_size, app.wall_size,
-                            app.cell_size, app.maze_pixel_width,
-                            app.maze_pixel_height)
+            draw_entry_exit(app)
 
             cell = app.maze.visited_cells_resolution[app.resolution_idx]
             cell1 = app.maze.visited_cells_resolution[
@@ -393,16 +255,9 @@ def main():
             if cell1 is None:
                 app.state = State.DONE
                 return
-            cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
-            cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
-            draw_rect(app.data, app.size_line, cx, cy, app.cell_size,
-                      app.cell_size, app.path_color, app.maze_pixel_width,
-                      app.maze_pixel_height)
+            draw_cell(app, cell, app.path_color)
 
-            draw_connection(app.data, app.size_line, cell, cell1,
-                            app.margem_size, app.wall_size, app.cell_size,
-                            app.path_color, app.maze_pixel_width,
-                            app.maze_pixel_height)
+            draw_connection(app, cell, cell1, app.path_color)
 
             expose_hook(None)
             time.sleep(0.01)
@@ -437,10 +292,7 @@ def main():
                 app.crete_maze.maze.bfs_game(app.teseu_cell, app.minotaur_cell)
                 )
 
-            draw_entry_exit(app.data, app.size_line,
-                            app, app.margem_size, app.wall_size,
-                            app.cell_size, app.maze_pixel_width,
-                            app.maze_pixel_height)
+            draw_entry_exit(app)
 
             cell = app.crete_maze.teseu_path[app.resolution_idx_t]
             cell1 = app.crete_maze.teseu_path[
@@ -454,21 +306,11 @@ def main():
             if cell1 is None:
                 app.state = State.DONE
                 return
-            cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
-            cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
-            cx2 = app.margem_size + cell1.x * (app.cell_size + app.wall_size)
-            cy2 = app.margem_size + cell1.y * (app.cell_size + app.wall_size)
-            draw_rect(app.data, app.size_line, cx, cy, app.cell_size,
-                      app.cell_size, 0xFFFF00, app.maze_pixel_width,
-                      app.maze_pixel_height)
+            draw_cell(app, cell, 0xFFFF00)
 
-            draw_rect(app.data, app.size_line, cx2, cy2, app.cell_size,
-                      app.cell_size, 0xFFFF00, app.maze_pixel_width,
-                      app.maze_pixel_height)
+            draw_cell(app, cell1, 0xFFFF00)
 
-            draw_rect(app.data, app.size_line, cx, cy, app.cell_size,
-                      app.cell_size, app.maze_color, app.maze_pixel_width,
-                      app.maze_pixel_height)
+            draw_maze_cell(app, cell, app.maze_color)
 
             # printar a conexao
             # draw_connection(app.data, app.size_line, cell, cell1,
@@ -476,7 +318,7 @@ def main():
             # app.maze_pixel_width, app.maze_pixel_height)
 
             expose_hook(None)
-            time.sleep(0.001)
+            time.sleep(0.01)
             app.crete_maze.teseu_idx += 1
             if app.crete_maze.teseu_idx % 2 != 0:
                 app.resolution_idx_t += 1
@@ -493,9 +335,7 @@ def main():
         elif app.state == State.MINOTAUR:
             # app.crete_maze.minotaur_path = app.crete_maze.maze.bfs_game(
             # app.minotaur_cell, app.exit_cell)
-            draw_entry_exit(app.data, app.size_line, app, app.margem_size,
-                            app.wall_size, app.cell_size, app.maze_pixel_width,
-                            app.maze_pixel_height)
+            draw_entry_exit(app)
 
             cell = app.crete_maze.minotaur_path[app.resolution_idx_m]
             cell1 = app.crete_maze.minotaur_path[
@@ -509,21 +349,12 @@ def main():
             if cell1 is None:
                 app.state = State.DONE
                 return
-            cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
-            cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
-            cx2 = app.margem_size + cell1.x * (app.cell_size + app.wall_size)
-            cy2 = app.margem_size + cell1.y * (app.cell_size + app.wall_size)
-            draw_rect(app.data, app.size_line, cx, cy, app.cell_size,
-                      app.cell_size, app.path_color, app.maze_pixel_width,
-                      app.maze_pixel_height)
 
-            draw_rect(app.data, app.size_line, cx2, cy2, app.cell_size,
-                      app.cell_size, app.path_color, app.maze_pixel_width,
-                      app.maze_pixel_height)
+            draw_cell(app, cell, app.path_color)
 
-            draw_rect(app.data, app.size_line, cx, cy, app.cell_size,
-                      app.cell_size, app.maze_color, app.maze_pixel_width,
-                      app.maze_pixel_height)
+            draw_cell(app, cell1, app.path_color)
+
+            draw_maze_cell(app, cell, app.maze_color)
 
             # printar a conexao
             # draw_connection(app.data, app.size_line, cell, cell1,
@@ -532,7 +363,7 @@ def main():
 
             app.minotaur_cell = cell1
             expose_hook(None)
-            time.sleep(0.001)
+            time.sleep(0.01)
             app.resolution_idx_m += 1
             app.crete_maze.minotaur_idx += 1
             if app.crete_maze.minotaur_idx < 10:
@@ -542,13 +373,14 @@ def main():
             #     app.state = State.DONE
             #     app.last_state = State.RESOLUTION_SHOWN
             #     return
+            app.crete_maze.maze.bfs_game(app.minotaur_cell, app.exit_cell)
             app.state = State.TESEU
             return
 
-    def key_options(keycode: int, _) -> None:
+    def key_options(keycode: int, _: None) -> None:
 
         if keycode == 65307:  # ESC
-            app.ptr.mlx_loop_exit(app.mlx_ptr)
+            app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
 
         if keycode == 114:  # R
             print("Resetting the maze...")
@@ -559,24 +391,20 @@ def main():
             app.exit_cell = app.maze.get_cell(
                 app.config.exit[0], app.config.exit[1])
 
-            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
 
             app.image = app.ptr.mlx_new_image(
-                app.mlx_ptr, app.maze_pixel_width, app.maze_pixel_height)
+                app.mlx_ptr,
+                app.maze_pixel_width, app.maze_pixel_height)  # type: ignore
 
             app.data, _, app.size_line, _ = app.ptr.mlx_get_data_addr(
-                app.image)
+                app.image)  # type: ignore
 
-            draw_rect(app.data, app.size_line, 0, 0, app.maze_pixel_width,
-                      app.maze_pixel_height, app.background_color,
-                      app.maze_pixel_width, app.maze_pixel_height)
+            draw_rect(app, 0, 0, app.maze_pixel_width,
+                      app.maze_pixel_height, app.background_color)
 
             for cell in app.maze.pattern_cells:
-                draw_maze_cell(app.data, app.size_line, cell,
-                               app.margem_size, app.wall_size, app.cell_size,
-                               app.pattern_color, app.maze_pixel_width,
-                               app.maze_pixel_height)
-
+                draw_maze_cell(app, cell, app.pattern_color)
             app.state = State.GENERATE
             app.last_state = State.NOT_RESOLUTION
             app.generate_idx = 0
@@ -591,46 +419,40 @@ def main():
             app.path_color = random.randint(0x444445, 0x799999)
             app.pattern_color = random.randint(0xCCCCCC, 0xFFFFFF)
             app.background_color = random.randint(0, 0x444444)
-            draw_rect(app.data, app.size_line, 0, 0, app.maze_pixel_width,
-                      app.maze_pixel_height, app.background_color,
-                      app.maze_pixel_width, app.maze_pixel_height)
+            draw_rect(app, 0, 0, app.maze_pixel_width,
+                      app.maze_pixel_height, app.background_color)
 
             for cell in app.maze.visited_cells:
-                draw_maze_cell(app.data, app.size_line, cell,
-                               app.margem_size, app.wall_size, app.cell_size,
-                               app.maze_color, app.maze_pixel_width,
-                               app.maze_pixel_height)
+                draw_maze_cell(app, cell, app.maze_color)
 
             for cell in app.maze.pattern_cells:
-                cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
-                cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
-                draw_rect(app.data, app.size_line, cx, cy, app.cell_size,
-                          app.cell_size, app.pattern_color,
-                          app.maze_pixel_width, app.maze_pixel_height)
+                draw_maze_cell(app, cell, app.pattern_color)
 
-            if app.last_state == State.RESOLUTION_SHOWN and not (
-               app.last_state == State.NOT_RESOLUTION):
+            if app.last_state == State.RESOLUTION_SHOWN:
                 draw_resolution_path(app, app.path_color)
-                draw_entry_exit(app.data, app.size_line, app, app.margem_size,
-                                app.wall_size, app.cell_size,
-                                app.maze_pixel_width, app.maze_pixel_height)
+                draw_entry_exit(app)
 
             expose_hook(None)
 
         if keycode == 112:  # P
             print("Hide/Show resolution path...")
-            if app.state == State.DONE and app.last_state == State.RESOLUTION_SHOWN:
+            if (app.state == State.DONE and
+                    app.last_state == State.RESOLUTION_SHOWN):
                 app.state = State.RESOLUTION_HIDDEN
                 app.last_state = State.RESOLUTION_HIDDEN
-            elif app.state == State.DONE and app.last_state == State.RESOLUTION_HIDDEN:
+            elif (app.state == State.DONE and
+                    app.last_state == State.RESOLUTION_HIDDEN):
                 app.state = State.RESOLUTION_SHOWN
                 app.last_state = State.RESOLUTION_SHOWN
             elif app.last_state == State.NOT_RESOLUTION:
-                print("The maze is not solved yet, cannot toggle resolution path.")
+                print("The maze is not solved yet, cannot"
+                      " toggle resolution path.")
             else:
-                print("You can only toggle the resolution path after the maze is solved.")
+                print("You can only toggle the resolution path"
+                      " after the maze is solved.")
         if keycode == 115:  # S
-            if app.state == State.DONE and app.last_state == State.NOT_RESOLUTION:
+            if (app.state == State.DONE and
+                    app.last_state == State.NOT_RESOLUTION):
                 print("Solving the maze")
                 app.state = State.TESEU
                 app.resolution_idx = 0
@@ -648,19 +470,29 @@ def main():
                 app.state = State.DONE
                 app.last_state = State.RESOLUTION_SHOWN
 
-    app.ptr.mlx_key_hook(app.win, key_options, None)
-    app.ptr.mlx_expose_hook(app.win, expose_hook, None)
+    app.ptr.mlx_key_hook(app.win, key_options, None)  # type: ignore
+    app.ptr.mlx_expose_hook(app.win, expose_hook, None)  # type: ignore
 
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 300, 0xAAAAAA, "Press ESC to quit")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 260, 0xAAAAAA, "Press S to solve the maze")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 140, 0xAAAAAA, "Press R to reset the maze")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 160, 0xAAAAAA, "Press C to change the color")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 180, 0xAAAAAA, "Press P to hide/show resolution path")
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 280, 0xAAAAAA, "Press SPACE to skip animations")
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 300,
+                           0xAAAAAA, "Press ESC to quit")  # type: ignore
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win,
+                           900, 260, 0xAAAAAA,
+                           "Press S to solve the maze")  # type: ignore
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 140, 0xAAAAAA,
+                           "Press R to reset the maze")  # type: ignore
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 160, 0xAAAAAA,
+                           "Press C to change the color")  # type: ignore
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win,
+                           900, 180, 0xAAAAAA,
+                           "Press P to hide/show"
+                           "resolution path")  # type: ignore
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 280,
+                           0xAAAAAA, "Press SPACE to"
+                           "skip animations")  # type: ignore
 
-    app.ptr.mlx_loop_hook(app.mlx_ptr, update, None)
+    app.ptr.mlx_loop_hook(app.mlx_ptr, update, None)  # type: ignore
 
-    app.ptr.mlx_loop(app.mlx_ptr)
+    app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
 
 
 if __name__ == "__main__":

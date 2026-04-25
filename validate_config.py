@@ -55,8 +55,14 @@ def parser_config(conf_file: str) -> dict[str, str]:
 # Configuration com os valores padrão
 def validate_config(config: dict[str, str]) -> Configuration:
     configuration = Configuration()
-    configs_required = ["WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE",
-                        "PERFECT"]
+    configs_required = [
+        "WIDTH",
+        "HEIGHT",
+        "ENTRY",
+        "EXIT",
+        "OUTPUT_FILE",
+        "PERFECT",
+    ]
     try:
         for key, value in config.items():
             if key == "WIDTH" and int(value) > 0:
@@ -105,6 +111,28 @@ def validate_config(config: dict[str, str]) -> Configuration:
         if configs_required:
             raise ValueError(f"Missing configuration keys: \
 {', '.join(configs_required)}")
+        coords_to_validate: list[tuple[str, tuple[int, int]]] = [
+            ("ENTRY", configuration.entry),
+            ("EXIT", configuration.exit),
+        ]
+        if configuration.gamemode:
+            if configuration.teseu == configuration.minotaur:
+                raise ValueError(
+                    "TESEU and MINOTAUR cannot be at the same position"
+                )
+            coords_to_validate += [
+                ("TESEU", configuration.teseu),
+                ("MINOTAUR", configuration.minotaur),
+            ]
+        for name, (x, y) in coords_to_validate:
+            if name in ["TESEU", "MINOTAUR"] and (x, y) == configuration.exit:
+                raise ValueError(
+                    f"{name} cannot be at the same position as EXIT"
+                )
+            if x < 0 or x >= configuration.width:
+                raise ValueError(f"{name} X coordinate {x} out of bounds")
+            if y < 0 or y >= configuration.height:
+                raise ValueError(f"{name} Y coordinate {y} out of bounds")
     except Exception as e:
         print(f"Error validating config: {e}")
         exit(1)
@@ -125,12 +153,6 @@ def read_config_file() -> Configuration:
     except Exception as e:
         print(f"Error: {e}")
         exit(1)
-        if conf.x < 0 or conf.x >= conf.width:
-            raise ValueError(f"X coordinate {conf.x} is out of bounds for \
-            width {conf.width}")
-        if conf.y < 0 or conf.y >= conf.height:
-            raise ValueError(f"Y coordinate {conf.y} is out of bounds for \
-            height {conf.height}")
     return conf
 
 

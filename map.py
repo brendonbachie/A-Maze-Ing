@@ -17,19 +17,23 @@ class MazeGenerator():
     def __init__(self, configuration: validate_config.Configuration):
         self.width = configuration.width
         self.height = configuration.height
-        self.entry = configuration.entry
-        self.exit = configuration.exit
         self.output_file = configuration.output_file
         self.perfect = configuration.perfect
         self.seed = configuration.seed
         self.gamemode = configuration.gamemode
-        self.teseu = configuration.teseu
-        self.minotaur = configuration.minotaur
-        self.maze = [Cell(x, y) for y in range(
+        self.maze: list[Cell] = [Cell(x, y) for y in range(
             self.height) for x in range(self.width)]
         self.visited_cells: list[Cell] = []
         self.visited_cells_resolution: list[Cell] = []
+        self.teseu = self.get_cell(configuration.teseu[0],
+                                   configuration.teseu[1])
+        self.minotaur = self.get_cell(configuration.minotaur[0],
+                                      configuration.minotaur[1])
         self.pattern_cells: list[Cell] = []
+        self.entry: Cell = self.get_cell(configuration.entry[0],
+                                         configuration.entry[1])
+        self.exit: Cell = self.get_cell(configuration.exit[0],
+                                        configuration.exit[1])
 
         if self.seed is not None:
             random.seed(self.seed)
@@ -41,22 +45,30 @@ class MazeGenerator():
         return Cell(-1, -1)
 
     def pattern(self) -> None:
-        x = self.width // 2
-        y = self.height // 2
+        try:
+            x = self.width // 2
+            y = self.height // 2
 
-        coords = [
-            # 4 format
-            (y, x-1), (y, x-2), (y, x-3), (y-1, x-3), (y-2, x-3),
-            (y+1, x-1), (y+2, x-1),
+            coords = [
+                # 4 format
+                (y, x-1), (y, x-2), (y, x-3), (y-1, x-3), (y-2, x-3),
+                (y+1, x-1), (y+2, x-1),
 
-            # 2 format
-            (y, x+1), (y, x+2), (y, x+3), (y-1, x+3), (y-2, x+3), (y-2, x+2),
-            (y-2, x+1), (y+1, x+1), (y+2, x+1), (y+2, x+2), (y+2, x+3)
-            ]
-        for coord in coords:
-            cell = self.get_cell(coord[1], coord[0])
-            cell.visited = True
-            self.pattern_cells.append(cell)
+                # 2 format
+                (y, x+1), (y, x+2), (y, x+3), (y-1, x+3),
+                (y-2, x+3), (y-2, x+2),
+                (y-2, x+1), (y+1, x+1), (y+2, x+1), (y+2, x+2), (y+2, x+3)
+                ]
+            for coord in coords:
+                cell = self.get_cell(coord[1], coord[0])
+                if cell == self.entry or cell == self.exit:
+                    raise ValueError("The pattern cannot be applied because"
+                                     "the entry or exit is in the way.")
+                cell.visited = True
+                self.pattern_cells.append(cell)
+        except ValueError as e:
+            print(e)
+            exit(1)
 
     def get_neighboard(self, cell: Cell, neigboards: list[Cell]) -> None:
         if cell.x + 1 < self.width:
@@ -243,8 +255,10 @@ def maze_generator(config: validate_config.Configuration) -> MazeGenerator:
     if not config.perfect:
         maze.not_perfect_maze()
     maze.reset_visited()
-    entry_cell = maze.get_cell(config.entry[0], config.entry[1])
+    entry_cell: Cell = maze.get_cell(config.entry[0], config.entry[1])
     exit_cell = maze.get_cell(config.exit[0], config.exit[1])
+    maze.entry = entry_cell
+    maze.exit = exit_cell
     maze.bfs_resolution(entry_cell, exit_cell)
     return maze
 
@@ -298,9 +312,10 @@ def output_maze(maze: MazeGenerator) -> None:
             line += get_hex(cell)
         line += "\n"
     line += "\n"
-    line += (f"{maze.entry[0]},{maze.entry[1]}\n\
-{maze.exit[0]},{maze.exit[1]}\n")
-
+    line += f"({maze.entry.x}, {maze.entry.y})"
+    line += "\n"
+    line += f"({maze.exit.x}, {maze.exit.y})"
+    line += "\n"
     visited_cells = maze.visited_cells_resolution
     for i in range(len(visited_cells) - 1):
         line += get_direction(visited_cells[i], visited_cells[i + 1])
