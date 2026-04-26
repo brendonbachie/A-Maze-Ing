@@ -39,7 +39,7 @@ class MazeState():
         self.maze_pixel_height: int = 0
         self.ptr: mlx.Mlx = mlx.Mlx()  # type: ignore
         self.mlx_ptr: mlx.Mlx = self.ptr.mlx_init()  # type: ignore
-        self.win: mlx.Mlx = None
+        self.win: mlx.Mlx | None = None
         self.state = State.DONE
         self.last_state = State.NOT_RESOLUTION
         self.generate_idx = 0
@@ -47,6 +47,7 @@ class MazeState():
         self.resolution_idx_t = 0
         self.resolution_idx_m = 0
         self.image: mlx.Mlx | None = None
+        self.is_generate: bool = False
         self.data: bytearray = bytearray()
         self.size_line: int = 0
         self.path_color = 0x00CFFF
@@ -139,23 +140,27 @@ def draw_minotaur(app: MazeState, cell: Cell) -> None:
         return
     cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
     cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
+    cx += (app.cell_size - app.minotaur_width) // 2
+    cy += (app.cell_size - app.minotaur_height) // 2
     app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
                                     app.minotaur_image, cx, cy)  # type: ignore
-    
+
 
 def draw_teseu(app: MazeState, cell: Cell) -> None:
     if app.teseu_image is None:
         return
     cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
     cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
+    cx += (app.cell_size - app.teseu_width) // 2
+    cy += (app.cell_size - app.teseu_height) // 2
     app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
                                     app.teseu_image, cx, cy)  # type: ignore
-    
+
 
 def draw_teseu_victory(app: MazeState, cell: Cell) -> None:
     app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
                                     app.teseu_victory, 0, 0)  # type: ignore
-    
+
 
 def draw_minotaur_victory(app: MazeState, cell: Cell) -> None:
     app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
@@ -219,7 +224,7 @@ def draw_resolution_path(app: MazeState, color: int) -> None:
         draw_cell(app, cell, color)
         draw_connection(app, cell, cell1, color)
     draw_entry_exit(app)
-    app.expose_hook(None)  # type: ignore
+    app.expose_hook(None)
 
 
 def draw_full_maze(app: MazeState, color: int) -> None:
@@ -227,7 +232,7 @@ def draw_full_maze(app: MazeState, color: int) -> None:
         draw_maze_cell(app, cell, color)
 
     draw_entry_exit(app)
-    app.expose_hook(None)  # type: ignore
+    app.expose_hook(None)
 
 
 def mino_teseu_position(app: MazeState) -> None:
@@ -240,7 +245,7 @@ def draw_full_maze_game(app: MazeState, color: int) -> None:
         draw_maze_cell(app, cell, color)
     draw_cell(app, app.teseu_cell, 0x00FF00)
     draw_cell(app, app.exit_cell, 0xFF0000)
-    app.expose_hook(None)  # type: ignore
+    app.expose_hook(None)
 
 
 def loop_idle(_: None) -> None:
@@ -356,6 +361,7 @@ def key_hook(keycode: int, app: MazeState) -> None:
         app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
 
     if keycode == 103:  # G
+        app.is_generate = True
         if app.state == State.GENERATE:
             print("The maze is already being generated.")
             return
@@ -365,6 +371,9 @@ def key_hook(keycode: int, app: MazeState) -> None:
         app.ptr.mlx_loop_hook(app.mlx_ptr, generate, app)  # type: ignore
 
     if keycode == 114:  # R
+        if not app.is_generate:
+            print("You need to generate a maze before.")
+            return
         print("Resetting the maze...")
         app.resolution_idx = 0
         app.generate_idx = 0
@@ -376,20 +385,23 @@ def key_hook(keycode: int, app: MazeState) -> None:
 
         draw_rect(app, 0, 0, app.maze_pixel_width,
                   app.maze_pixel_height, app.background_color)
-        
-        app.maze = map.maze_generator(app.config, solve=True)
 
+        app.maze = map.maze_generator(app.config, solve=True)
+        app.is_generate = True
         for cell in app.maze.pattern_cells:
             draw_cell(app, cell, app.pattern_color)
 
         draw_full_maze(app, app.maze_color)
         draw_entry_exit(app)
-        app.expose_hook(None)  # type: ignore
+        app.expose_hook(None)
         app.state = State.DONE
         app.last_state = State.NOT_RESOLUTION
         app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
 
     if keycode == 115:  # S
+        if not app.is_generate:
+            print("You need to generate a maze before.")
+            return
         if app.state == State.RESOLUTION:
             print("The maze is already being solved.")
             return
@@ -403,16 +415,25 @@ def key_hook(keycode: int, app: MazeState) -> None:
         app.state = State.RESOLUTION
         app.ptr.mlx_loop_hook(app.mlx_ptr, solve, app)  # type: ignore
     if keycode == 99:  # C
+        if not app.is_generate:
+            print("You need to generate a maze before changing the color.")
+            return
         print("Changing the color...")
         change_color(app)
     if keycode == 112:  # P
+        if not app.is_generate:
+            print("You need to generate a maze before.")
+            return
         print("Hide/Show resolution path...")
         show_hide_path(app)
     if keycode == 32:  # SPACE
+        if not app.is_generate:
+            print("You need to generate a maze before.")
+            return
         skip_animations(app)
     if keycode == 109:  # M
         if app.config.gamemode:
-            print("Starting the game...")
+            print("Opening the game...")
             app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
             app.ptr.mlx_destroy_window(app.mlx_ptr, app.win)  # type: ignore
             app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
@@ -428,12 +449,14 @@ def game_start(app: MazeState) -> None:
                                                  app.minotaur_cell)
                     )
         draw_entry_exit(app)
-        app.resolution_idx_t = 0
-        app.teseu_cell = app.crete_maze.teseu_path[app.resolution_idx_t]
-        cell1 = app.crete_maze.teseu_path[
-            app.resolution_idx_t + 1] if app.resolution_idx_t + 1 < len(
-                app.crete_maze.teseu_path) else None
+        cell1 = app.crete_maze.teseu_path[1] if len(
+                app.crete_maze.teseu_path) > 1 else None
 
+        if cell1 is None:
+            app.state = State.DONE
+            return
+        draw_teseu(app, app.teseu_cell)
+        app.teseu_cell = cell1
         if app.teseu_cell == app.minotaur_cell:
             print("Teseu reached the Minotaur!")
             app.state = State.DONE
@@ -441,11 +464,6 @@ def game_start(app: MazeState) -> None:
             app.image = None
             draw_teseu_victory(app, app.teseu_cell)
             return
-        if cell1 is None:
-            app.state = State.DONE
-            return
-        draw_teseu(app, app.teseu_cell)
-        app.teseu_cell = cell1
         draw_minotaur(app, app.minotaur_cell)
         app.expose_hook(None)
 
@@ -453,13 +471,11 @@ def game_start(app: MazeState) -> None:
 
         draw_minotaur(app, app.minotaur_cell)
 
-        time.sleep(0.01)
+        time.sleep(0.05)
         app.crete_maze.teseu_idx += 1
         if app.crete_maze.teseu_idx % 2 != 0:
-            app.resolution_idx_t += 1
             return
         else:
-            app.resolution_idx_t += 1
             app.state = State.MINOTAUR
             return
 
@@ -488,10 +504,9 @@ def game_start(app: MazeState) -> None:
         app.expose_hook(None)
         draw_teseu(app, app.teseu_cell)
         draw_minotaur(app, app.minotaur_cell)
-        time.sleep(0.01)
+        time.sleep(0.05)
         app.resolution_idx_m += 1
         app.crete_maze.minotaur_idx += 1
-        app.crete_maze.maze.bfs_game(app.minotaur_cell, app.exit_cell)
         if app.crete_maze.minotaur_idx < 10:
             app.state = State.TESEU
             return
@@ -503,19 +518,23 @@ def key_game_hook(keycode: int, app: MazeState) -> None:
     if keycode == 65307:  # ESC
         print("Exiting the game...")
         if app.minotaur_image is not None:
-            app.ptr.mlx_destroy_image(app.mlx_ptr, app.minotaur_image)  # type: ignore
+            app.ptr.mlx_destroy_image(app.mlx_ptr,
+                                      app.minotaur_image)  # type: ignore
             app.minotaur_image = None
         if app.image is not None:
             app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
             app.image = None
         if app.teseu_image is not None:
-            app.ptr.mlx_destroy_image(app.mlx_ptr, app.teseu_image)  # type: ignore
+            app.ptr.mlx_destroy_image(app.mlx_ptr,
+                                      app.teseu_image)  # type: ignore
             app.teseu_image = None
         if app.teseu_victory is not None:
-            app.ptr.mlx_destroy_image(app.mlx_ptr, app.teseu_victory)  # type: ignore
+            app.ptr.mlx_destroy_image(app.mlx_ptr,
+                                      app.teseu_victory)  # type: ignore
             app.teseu_victory = None
         if app.minotaur_victory is not None:
-            app.ptr.mlx_destroy_image(app.mlx_ptr, app.minotaur_victory)  # type: ignore
+            app.ptr.mlx_destroy_image(app.mlx_ptr,
+                                      app.minotaur_victory)  # type: ignore
             app.minotaur_victory = None
         app.ptr.mlx_destroy_window(app.mlx_ptr, app.win)  # type: ignore
         app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
@@ -537,6 +556,9 @@ def graphics(mode: str = "normal") -> None:
                                          app.maze_pixel_height,
                                          "Maze Game")  # type: ignore
         mino_teseu_position(app)
+        app.maze_color = 0xC2B8A3
+        app.background_color = 0x4A3F35
+        app.path_color = 0xC9A227
         app.state = State.GAME
         for cell in app.maze.pattern_cells:
             draw_cell(app, cell, app.pattern_color)
@@ -560,11 +582,14 @@ def graphics(mode: str = "normal") -> None:
          app.minotaur_victory_height) = app.ptr.mlx_xpm_file_to_image(
                             app.mlx_ptr,
                             "mino.xpm")  # type: ignore
+        draw_rect(app, 0, 0, app.maze_pixel_width,
+                  app.maze_pixel_height, app.background_color)
         draw_full_maze_game(app, app.maze_color)
         app.ptr.mlx_key_hook(app.win, key_game_hook, app)  # type: ignore
         app.ptr.mlx_expose_hook(app.win, app.expose_hook, None)  # type: ignore
         app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
         app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
+        return
 
     app = MazeState()
     app.initialize_mlx()

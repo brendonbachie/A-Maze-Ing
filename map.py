@@ -294,9 +294,9 @@ def output_maze(maze: MazeGenerator) -> None:
             line += get_hex(cell)
         line += "\n"
     line += "\n"
-    line += f"({maze.entry.x}, {maze.entry.y})"
+    line += f"{maze.entry.x}, {maze.entry.y}"
     line += "\n"
-    line += f"({maze.exit.x}, {maze.exit.y})"
+    line += f"{maze.exit.x}, {maze.exit.y}"
     line += "\n"
     visited_cells = maze.visited_cells_resolution
     for i in range(len(visited_cells) - 1):
