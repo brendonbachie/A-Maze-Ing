@@ -25,7 +25,8 @@ class State(Enum):
 class MazeState():
     def __init__(self) -> None:
         self.config: cfg = validate_config.read_config_file()
-        self.maze: map.MazeGenerator = map.maze_generator(self.config)
+        self.maze: map.MazeGenerator = map.maze_generator(self.config,
+                                                          solve=True)
         self.crete_maze: game.GameState = game.generate_game_state(self.config)
         self.entry_cell: Cell = Cell(-1, -1)
         self.exit_cell: Cell = Cell(-1, -1)
@@ -38,8 +39,8 @@ class MazeState():
         self.maze_pixel_height: int = 0
         self.ptr: mlx.Mlx = mlx.Mlx()  # type: ignore
         self.mlx_ptr: mlx.Mlx = self.ptr.mlx_init()  # type: ignore
-        self.win: mlx.Mlx | None = None
-        self.state = State.GAME
+        self.win: mlx.Mlx = None
+        self.state = State.DONE
         self.last_state = State.NOT_RESOLUTION
         self.generate_idx = 0
         self.resolution_idx = 0
@@ -52,11 +53,9 @@ class MazeState():
         self.maze_color = 0x111827
         self.pattern_color = 0x3B82F6
         self.background_color = 0x374151
-
-    def initialize_maze(self) -> None:
-        map.output_maze(self.maze)
-        self.entry_cell = self.maze.entry
-        self.exit_cell = self.maze.exit
+        self.minotaur_image: mlx.Mlx | None = None
+        self.minotaur_width: int = 0
+        self.minotaur_height: int = 0
 
     def initialize_mlx(self) -> None:
         self.margem_size, self.wall_size, self.cell_size = (
@@ -71,6 +70,11 @@ class MazeState():
 
         self.data, _, self.size_line, _ = self.ptr.mlx_get_data_addr(
             self.image)  # type: ignore
+
+    def expose_hook(self, _: None) -> None:
+        self.ptr.mlx_put_image_to_window(self.mlx_ptr,
+                                         self.win, self.image,
+                                         0, 0)  # type: ignore
 
 
 def structure_dimensions(config: cfg) -> tuple[int, int, int]:
@@ -119,6 +123,15 @@ def draw_cell(app: MazeState, cell: Cell, color: int) -> None:
     cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
     cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
     draw_rect(app, cx, cy, app.cell_size, app.cell_size, color)
+
+
+def draw_minotaur(app: MazeState, cell: Cell) -> None:
+    if app.minotaur_image is None:
+        return
+    cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
+    cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
+    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
+                                    app.minotaur_image, cx, cy)  # type: ignore
 
 
 def draw_connection(app: MazeState, cell1: Cell,
@@ -178,9 +191,7 @@ def draw_resolution_path(app: MazeState, color: int) -> None:
         draw_cell(app, cell, color)
         draw_connection(app, cell, cell1, color)
     draw_entry_exit(app)
-    app.ptr.mlx_put_image_to_window(
-        app.mlx_ptr, app.win,
-        app.image, 0, 0)  # type: ignore
+    app.expose_hook(None)  # type: ignore
 
 
 def draw_full_maze(app: MazeState, color: int) -> None:
@@ -188,8 +199,12 @@ def draw_full_maze(app: MazeState, color: int) -> None:
         draw_maze_cell(app, cell, color)
 
     draw_entry_exit(app)
-    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
-                                    app.image, 0, 0)  # type: ignore
+    app.expose_hook(None)  # type: ignore
+
+
+def mino_teseu_position(app: MazeState) -> None:
+    app.teseu_cell = app.crete_maze.teseu_pos
+    app.minotaur_cell = app.crete_maze.minotaur_pos
 
 
 def draw_full_maze_game(app: MazeState, color: int) -> None:
@@ -198,16 +213,298 @@ def draw_full_maze_game(app: MazeState, color: int) -> None:
     draw_cell(app, app.teseu_cell, 0x00FF00)
     draw_cell(app, app.exit_cell, 0xFF0000)
     draw_cell(app, app.minotaur_cell, 0xFFFF00)
-    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
-                                    app.image, 0, 0)  # type: ignore
+    app.expose_hook(None)  # type: ignore
 
 
-def main() -> None:
+def loop_idle(_: None) -> None:
+    pass
+
+
+def generate(app: MazeState) -> None:
+    app.entry_cell = app.maze.entry
+    app.exit_cell = app.maze.exit
+    cell = app.maze.visited_cells[app.generate_idx]
+    draw_maze_cell(app, cell, app.maze_color)
+    app.expose_hook(None)
+    time.sleep(0.01)
+    app.generate_idx += 1
+    if app.generate_idx >= len(app.maze.visited_cells):
+        draw_entry_exit(app)
+        app.state = State.DONE
+        app.last_state = State.NOT_RESOLUTION
+
+
+def solve(app: MazeState) -> None:
+    draw_entry_exit(app)
+    cell = app.maze.visited_cells_resolution[app.resolution_idx]
+    cell1 = app.maze.visited_cells_resolution[
+        app.resolution_idx + 1] if app.resolution_idx + 1 < len(
+            app.maze.visited_cells_resolution) else None
+    if cell1 is None:
+        app.state = State.DONE
+        return
+    draw_cell(app, cell, app.path_color)
+    draw_connection(app, cell, cell1, app.path_color)
+    app.expose_hook(None)
+    time.sleep(0.01)
+    app.resolution_idx += 1
+    if app.resolution_idx >= len(
+       app.maze.visited_cells_resolution) - 1:
+        app.state = State.DONE
+        app.last_state = State.RESOLUTION_SHOWN
+        return
+
+
+def change_color(app: MazeState) -> None:
+    if not app.state == State.DONE:
+        print("Cannot change color during animation.")
+        return
+    print("Changing the color...")
+    app.maze_color = random.randint(0x800000, 0xAAAAAA)
+    app.path_color = random.randint(0x444445, 0x799999)
+    app.pattern_color = random.randint(0xCCCCCC, 0xFFFFFF)
+    app.background_color = random.randint(0, 0x444444)
+    draw_rect(app, 0, 0, app.maze_pixel_width,
+              app.maze_pixel_height, app.background_color)
+
+    if app.maze.visited_cells:
+        for cell in app.maze.visited_cells:
+            draw_maze_cell(app, cell, app.maze_color)
+
+    for cell in app.maze.pattern_cells:
+        draw_maze_cell(app, cell, app.pattern_color)
+
+    if app.last_state == State.RESOLUTION_SHOWN:
+        draw_resolution_path(app, app.path_color)
+        draw_entry_exit(app)
+
+    app.expose_hook(None)
+
+
+def show_hide_path(app: MazeState) -> None:
+    if (app.state == State.DONE and
+            app.last_state == State.RESOLUTION_SHOWN):
+        app.state = State.RESOLUTION_HIDDEN
+        app.last_state = State.RESOLUTION_HIDDEN
+    elif (app.state == State.DONE and
+            app.last_state == State.RESOLUTION_HIDDEN):
+        app.state = State.RESOLUTION_SHOWN
+        app.last_state = State.RESOLUTION_SHOWN
+    elif app.last_state == State.NOT_RESOLUTION:
+        print("The maze is not solved yet, cannot"
+              " toggle resolution path.")
+    else:
+        print("You can only toggle the resolution path"
+              " after the maze is solved.")
+        return
+    if app.state == State.RESOLUTION_HIDDEN:
+        draw_full_maze(app, app.maze_color)
+        app.state = State.DONE
+        return
+
+    elif app.state == State.RESOLUTION_SHOWN:
+        draw_resolution_path(app, app.path_color)
+        app.state = State.DONE
+        return
+
+
+def skip_animations(app: MazeState) -> None:
+    if app.state == State.GENERATE:
+        print("Skipping generation animation...")
+        draw_full_maze(app, app.maze_color)
+        app.state = State.DONE
+        app.last_state = State.NOT_RESOLUTION
+        return
+
+    elif app.state == State.RESOLUTION:
+        print("Skipping resolution animation...")
+        draw_resolution_path(app, app.path_color)
+        app.state = State.DONE
+        app.last_state = State.RESOLUTION_SHOWN
+        return
+
+
+def key_hook(keycode: int, app: MazeState) -> None:
+    if keycode == 65307:  # ESC
+        app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
+
+    if keycode == 103:  # G
+        if app.state == State.GENERATE:
+            print("The maze is already being generated.")
+            return
+        print("Generating the maze...")
+        app.state = State.GENERATE
+        app.maze = map.maze_generator(app.config, solve=True)
+        app.ptr.mlx_loop_hook(app.mlx_ptr, generate, app)  # type: ignore
+
+    if keycode == 114:  # R
+        print("Resetting the maze...")
+        app.resolution_idx = 0
+        app.generate_idx = 0
+        app.maze.reset_visited()
+        app.maze.visited_cells_resolution = []
+
+        app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+        app.initialize_mlx()
+
+        draw_rect(app, 0, 0, app.maze_pixel_width,
+                  app.maze_pixel_height, app.background_color)
+        
+        app.maze = map.maze_generator(app.config, solve=True)
+
+        for cell in app.maze.pattern_cells:
+            draw_cell(app, cell, app.pattern_color)
+
+        draw_full_maze(app, app.maze_color)
+        draw_entry_exit(app)
+        app.expose_hook(None)  # type: ignore
+        app.state = State.DONE
+        app.last_state = State.NOT_RESOLUTION
+        app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
+
+    if keycode == 115:  # S
+        if app.state == State.RESOLUTION:
+            print("The maze is already being solved.")
+            return
+        if not app.maze.visited_cells:
+            print("Generate a maze first.")
+            return
+        if app.last_state != State.NOT_RESOLUTION:
+            print("The maze is already solved.")
+            return
+        print("Solving the maze...")
+        app.state = State.RESOLUTION
+        app.ptr.mlx_loop_hook(app.mlx_ptr, solve, app)  # type: ignore
+    if keycode == 99:  # C
+        print("Changing the color...")
+        change_color(app)
+    if keycode == 112:  # P
+        print("Hide/Show resolution path...")
+        show_hide_path(app)
+    if keycode == 32:  # SPACE
+        skip_animations(app)
+    if keycode == 109:  # M
+        if app.config.gamemode:
+            print("Starting the game...")
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+            app.ptr.mlx_destroy_window(app.mlx_ptr, app.win)  # type: ignore
+            app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
+            app.state = State.GAME
+        else:
+            print("Game mode is not enabled in the configuration.")
+
+
+def game_start(app: MazeState) -> None:
+    if app.state == State.TESEU:
+        app.crete_maze.teseu_path = (
+                    app.crete_maze.maze.bfs_game(app.teseu_cell,
+                                                 app.minotaur_cell)
+                    )
+        draw_entry_exit(app)
+        cell = app.crete_maze.teseu_path[app.resolution_idx_t]
+        cell1 = app.crete_maze.teseu_path[
+            app.resolution_idx_t + 1] if app.resolution_idx_t + 1 < len(
+                app.crete_maze.teseu_path) else None
+
+        if cell == app.minotaur_cell:
+            print("Teseu reached the Minotaur!")
+            app.state = State.DONE
+            return
+        if cell1 is None:
+            app.state = State.DONE
+            return
+        draw_cell(app, cell, 0xFFFF00)
+
+        draw_cell(app, cell1, 0xFFFF00)
+
+        draw_maze_cell(app, cell, app.maze_color)
+
+        app.expose_hook(None)
+        time.sleep(0.01)
+        app.crete_maze.teseu_idx += 1
+        if app.crete_maze.teseu_idx % 2 != 0:
+            app.resolution_idx_t += 1
+            return
+        else:
+            app.resolution_idx_t += 1
+            app.state = State.MINOTAUR
+            return
+
+    elif app.state == State.MINOTAUR:
+        cell = app.crete_maze.minotaur_path[app.resolution_idx_m]
+        cell1 = app.crete_maze.minotaur_path[
+            app.resolution_idx_m + 1] if app.resolution_idx_m + 1 < len(
+                app.crete_maze.minotaur_path) else None
+
+        if cell == app.exit_cell:
+            app.state = State.DONE
+            print("Minotaur reached the exit! Teseu loses!")
+            app.last_state = State.RESOLUTION_SHOWN
+            return
+        if cell1 is None:
+            app.state = State.DONE
+            return
+
+        draw_minotaur(app, cell)
+
+        app.minotaur_cell = cell1
+
+        app.expose_hook(None)
+        draw_minotaur(app, app.minotaur_cell)
+        time.sleep(0.01)
+        app.resolution_idx_m += 1
+        app.crete_maze.minotaur_idx += 1
+        app.crete_maze.maze.bfs_game(app.minotaur_cell, app.exit_cell)
+        if app.crete_maze.minotaur_idx < 10:
+            app.state = State.TESEU
+            return
+        app.state = State.TESEU
+        return
+
+
+def key_game_hook(keycode: int, app: MazeState) -> None:
+    if keycode == 65307:  # ESC
+        print("Exiting the game...")
+        app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+        app.ptr.mlx_destroy_window(app.mlx_ptr, app.win)  # type: ignore
+        app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
+        app.state = State.DONE
+    if keycode == 115:  # S
+        print("Starting the game...")
+        app.state = State.TESEU
+        app.ptr.mlx_loop_hook(app.mlx_ptr, game_start, app)  # type: ignore
+
+
+def graphics(mode: str = "normal") -> None:
 
     sys.setrecursionlimit(300000)
 
+    if mode == "game":
+        app = MazeState()
+        app.initialize_mlx()
+        app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width,
+                                         app.maze_pixel_height,
+                                         "Maze Game")  # type: ignore
+        mino_teseu_position(app)
+        app.state = State.GAME
+        for cell in app.maze.pattern_cells:
+            draw_cell(app, cell, app.pattern_color)
+        app.exit_cell = app.crete_maze.exit_pos
+        app.crete_maze.minotaur_path = app.crete_maze.maze.bfs_game(
+            app.minotaur_cell,
+            app.exit_cell)
+        (app.minotaur_image, app.minotaur_width,
+         app.minotaur_height) = app.ptr.mlx_xpm_file_to_image(
+                            app.mlx_ptr,
+                            "baixados.xpm")  # type: ignore
+        draw_full_maze_game(app, app.maze_color)
+        app.ptr.mlx_key_hook(app.win, key_game_hook, app)  # type: ignore
+        app.ptr.mlx_expose_hook(app.win, app.expose_hook, None)  # type: ignore
+        app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
+        app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
+
     app = MazeState()
-    app.initialize_maze()
+    app.initialize_mlx()
     app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width,
                                      app.maze_pixel_height,
                                      "Maze Generator")  # type: ignore
@@ -215,264 +512,11 @@ def main() -> None:
               app.maze_pixel_width, app.maze_pixel_height,
               app.background_color)
 
-    def initialize_game_maze(app: MazeState) -> None:
-        app.teseu_cell = app.crete_maze.teseu_pos
-        app.minotaur_cell = app.crete_maze.minotaur_pos
-
-    def expose_hook(_: None) -> None:
-        app.ptr.mlx_put_image_to_window(app.mlx_ptr,
-                                        app.win, app.image,
-                                        0, 0)  # type: ignore
-
     for cell in app.maze.pattern_cells:
         draw_cell(app, cell, app.pattern_color)
-    initialize_game_maze(app)
 
-    # app.crete_maze.minotaur_path =
-    # app.crete_maze.maze.bfs_game(app.minotaur_cell, app.exit_cell)
-    def update(_: None) -> None:
-
-        if app.state == State.GENERATE:
-            cell = app.maze.visited_cells[app.generate_idx]
-            draw_maze_cell(app, cell, app.maze_color)
-
-            expose_hook(None)
-            time.sleep(0.01)
-            app.generate_idx += 1
-            if app.generate_idx >= len(app.maze.visited_cells):
-                app.state = State.DONE
-                app.last_state = State.NOT_RESOLUTION
-            draw_entry_exit(app)
-            return
-
-        elif app.state == State.RESOLUTION:
-            draw_entry_exit(app)
-
-            cell = app.maze.visited_cells_resolution[app.resolution_idx]
-            cell1 = app.maze.visited_cells_resolution[
-                app.resolution_idx + 1] if app.resolution_idx + 1 < len(
-                    app.maze.visited_cells_resolution) else None
-            if cell1 is None:
-                app.state = State.DONE
-                return
-            draw_cell(app, cell, app.path_color)
-
-            draw_connection(app, cell, cell1, app.path_color)
-
-            expose_hook(None)
-            time.sleep(0.01)
-            app.resolution_idx += 1
-            if app.resolution_idx >= len(
-               app.maze.visited_cells_resolution) - 1:
-                app.state = State.DONE
-                app.last_state = State.RESOLUTION_SHOWN
-                return
-
-        elif app.state == State.DONE:
-            return
-
-        elif app.state == State.RESOLUTION_HIDDEN:
-            draw_full_maze(app, app.maze_color)
-            app.state = State.DONE
-            return
-
-        elif app.state == State.RESOLUTION_SHOWN:
-            draw_resolution_path(app, app.path_color)
-            app.state = State.DONE
-            return
-
-        elif app.state == State.GAME:
-            initialize_game_maze(app)
-            draw_full_maze_game(app, app.maze_color)
-            app.state = State.DONE
-            return
-
-        elif app.state == State.TESEU:
-            app.crete_maze.teseu_path = (
-                app.crete_maze.maze.bfs_game(app.teseu_cell, app.minotaur_cell)
-                )
-
-            draw_entry_exit(app)
-
-            cell = app.crete_maze.teseu_path[app.resolution_idx_t]
-            cell1 = app.crete_maze.teseu_path[
-                app.resolution_idx_t + 1] if app.resolution_idx_t + 1 < len(
-                    app.crete_maze.teseu_path) else None
-
-            if cell == app.minotaur_cell:
-                print("Teseu reached the Minotaur!")
-                app.state = State.DONE
-                return
-            if cell1 is None:
-                app.state = State.DONE
-                return
-            draw_cell(app, cell, 0xFFFF00)
-
-            draw_cell(app, cell1, 0xFFFF00)
-
-            draw_maze_cell(app, cell, app.maze_color)
-
-            # printar a conexao
-            # draw_connection(app.data, app.size_line, cell, cell1,
-            # app.margem_size, app.wall_size, app.cell_size, app.path_color,
-            # app.maze_pixel_width, app.maze_pixel_height)
-
-            expose_hook(None)
-            time.sleep(0.01)
-            app.crete_maze.teseu_idx += 1
-            if app.crete_maze.teseu_idx % 2 != 0:
-                app.resolution_idx_t += 1
-                return
-            else:
-                app.resolution_idx_t += 1
-                app.state = State.MINOTAUR
-            # if app.resolution_idx_t >= len(app.crete_maze.teseu_path) - 1:
-            #     app.state = State.DONE
-            #     app.last_state = State.RESOLUTION_SHOWN
-            #     return
-            return
-
-        elif app.state == State.MINOTAUR:
-            # app.crete_maze.minotaur_path = app.crete_maze.maze.bfs_game(
-            # app.minotaur_cell, app.exit_cell)
-            draw_entry_exit(app)
-
-            cell = app.crete_maze.minotaur_path[app.resolution_idx_m]
-            cell1 = app.crete_maze.minotaur_path[
-                app.resolution_idx_m + 1] if app.resolution_idx_m + 1 < len(
-                    app.crete_maze.minotaur_path) else None
-
-            if cell == app.exit_cell:
-                app.state = State.DONE
-                app.last_state = State.RESOLUTION_SHOWN
-                return
-            if cell1 is None:
-                app.state = State.DONE
-                return
-
-            draw_cell(app, cell, app.path_color)
-
-            draw_cell(app, cell1, app.path_color)
-
-            draw_maze_cell(app, cell, app.maze_color)
-
-            # printar a conexao
-            # draw_connection(app.data, app.size_line, cell, cell1,
-            # app.margem_size, app.wall_size, app.cell_size, app.path_color,
-            # app.maze_pixel_width, app.maze_pixel_height)
-
-            app.minotaur_cell = cell1
-            expose_hook(None)
-            time.sleep(0.01)
-            app.resolution_idx_m += 1
-            app.crete_maze.minotaur_idx += 1
-            if app.crete_maze.minotaur_idx < 10:
-                app.state = State.TESEU
-                return
-            # if app.resolution_idx_t >= len(app.crete_maze.minotaur_path) - 1:
-            #     app.state = State.DONE
-            #     app.last_state = State.RESOLUTION_SHOWN
-            #     return
-            app.crete_maze.maze.bfs_game(app.minotaur_cell, app.exit_cell)
-            app.state = State.TESEU
-            return
-
-    def key_options(keycode: int, _: None) -> None:
-
-        if keycode == 65307:  # ESC
-            app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
-
-        if keycode == 114:  # R
-            print("Resetting the maze...")
-            app.maze = map.maze_generator(app.config)
-            app.entry_cell = app.maze.get_cell(
-                app.config.entry[0], app.config.entry[1])
-
-            app.exit_cell = app.maze.get_cell(
-                app.config.exit[0], app.config.exit[1])
-
-            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
-
-            app.image = app.ptr.mlx_new_image(
-                app.mlx_ptr,
-                app.maze_pixel_width, app.maze_pixel_height)  # type: ignore
-
-            app.data, _, app.size_line, _ = app.ptr.mlx_get_data_addr(
-                app.image)  # type: ignore
-
-            draw_rect(app, 0, 0, app.maze_pixel_width,
-                      app.maze_pixel_height, app.background_color)
-
-            for cell in app.maze.pattern_cells:
-                draw_maze_cell(app, cell, app.pattern_color)
-            app.state = State.GENERATE
-            app.last_state = State.NOT_RESOLUTION
-            app.generate_idx = 0
-            app.resolution_idx = 0
-
-        if keycode == 99:  # C
-            if not app.state == State.DONE:
-                print("Cannot change color during animation.")
-                return
-            print("Changing the color...")
-            app.maze_color = random.randint(0x800000, 0xAAAAAA)
-            app.path_color = random.randint(0x444445, 0x799999)
-            app.pattern_color = random.randint(0xCCCCCC, 0xFFFFFF)
-            app.background_color = random.randint(0, 0x444444)
-            draw_rect(app, 0, 0, app.maze_pixel_width,
-                      app.maze_pixel_height, app.background_color)
-
-            for cell in app.maze.visited_cells:
-                draw_maze_cell(app, cell, app.maze_color)
-
-            for cell in app.maze.pattern_cells:
-                draw_maze_cell(app, cell, app.pattern_color)
-
-            if app.last_state == State.RESOLUTION_SHOWN:
-                draw_resolution_path(app, app.path_color)
-                draw_entry_exit(app)
-
-            expose_hook(None)
-
-        if keycode == 112:  # P
-            print("Hide/Show resolution path...")
-            if (app.state == State.DONE and
-                    app.last_state == State.RESOLUTION_SHOWN):
-                app.state = State.RESOLUTION_HIDDEN
-                app.last_state = State.RESOLUTION_HIDDEN
-            elif (app.state == State.DONE and
-                    app.last_state == State.RESOLUTION_HIDDEN):
-                app.state = State.RESOLUTION_SHOWN
-                app.last_state = State.RESOLUTION_SHOWN
-            elif app.last_state == State.NOT_RESOLUTION:
-                print("The maze is not solved yet, cannot"
-                      " toggle resolution path.")
-            else:
-                print("You can only toggle the resolution path"
-                      " after the maze is solved.")
-        if keycode == 115:  # S
-            if (app.state == State.DONE and
-                    app.last_state == State.NOT_RESOLUTION):
-                print("Solving the maze")
-                app.state = State.TESEU
-                app.resolution_idx = 0
-
-        if keycode == 32:  # SPACE
-            if app.state == State.GENERATE:
-                print("Skipping generation animation...")
-                draw_full_maze(app, app.maze_color)
-                app.state = State.DONE
-                app.last_state = State.NOT_RESOLUTION
-
-            elif app.state == State.RESOLUTION:
-                print("Skipping resolution animation...")
-                draw_resolution_path(app, app.path_color)
-                app.state = State.DONE
-                app.last_state = State.RESOLUTION_SHOWN
-
-    app.ptr.mlx_key_hook(app.win, key_options, None)  # type: ignore
-    app.ptr.mlx_expose_hook(app.win, expose_hook, None)  # type: ignore
-
+    app.ptr.mlx_key_hook(app.win, key_hook, app)  # type: ignore
+    app.ptr.mlx_expose_hook(app.win, app.expose_hook, None)  # type: ignore
     app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 300,
                            0xAAAAAA, "Press ESC to quit")  # type: ignore
     app.ptr.mlx_string_put(app.mlx_ptr, app.win,
@@ -489,11 +533,12 @@ def main() -> None:
     app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 280,
                            0xAAAAAA, "Press SPACE to"
                            "skip animations")  # type: ignore
-
-    app.ptr.mlx_loop_hook(app.mlx_ptr, update, None)  # type: ignore
-
+    app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
     app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
+
+    if app.state == State.GAME:
+        graphics(mode="game")
 
 
 if __name__ == "__main__":
-    main()
+    graphics()

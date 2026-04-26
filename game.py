@@ -1,11 +1,11 @@
 from validate_config import Configuration
-from map import Cell, MazeGenerator, game_maze_generator
+from map import Cell, MazeGenerator, maze_generator
 
 
 class GameState:
     def __init__(self, config: Configuration):
         self.config = config
-        self.maze: MazeGenerator = game_maze_generator(self.config)
+        self.maze: MazeGenerator = maze_generator(self.config, solve=False)
         self.teseu_pos: Cell = Cell(-1, -1)
         self.minotaur_pos: Cell = Cell(-1, -1)
         self.exit_pos: Cell = Cell(-1, -1)

@@ -1,4 +1,4 @@
-import validate_config
+from validate_config import Configuration as cfg
 import random
 
 
@@ -14,7 +14,7 @@ class Cell():
 
 
 class MazeGenerator():
-    def __init__(self, configuration: validate_config.Configuration):
+    def __init__(self, configuration: cfg):
         self.width = configuration.width
         self.height = configuration.height
         self.output_file = configuration.output_file
@@ -245,7 +245,7 @@ class MazeGenerator():
         return path
 
 
-def maze_generator(config: validate_config.Configuration) -> MazeGenerator:
+def maze_generator(config: cfg, solve: bool) -> MazeGenerator:
     maze = MazeGenerator(config)
     if maze.width < 8 or maze.height < 8:
         print("The maze is too small to apply the pattern, skipping it...")
@@ -255,26 +255,8 @@ def maze_generator(config: validate_config.Configuration) -> MazeGenerator:
     if not config.perfect:
         maze.not_perfect_maze()
     maze.reset_visited()
-    entry_cell: Cell = maze.get_cell(config.entry[0], config.entry[1])
-    exit_cell = maze.get_cell(config.exit[0], config.exit[1])
-    maze.entry = entry_cell
-    maze.exit = exit_cell
-    maze.bfs_resolution(entry_cell, exit_cell)
-    return maze
-
-
-def game_maze_generator(
-        config: validate_config.Configuration) -> MazeGenerator:
-
-    maze = MazeGenerator(config)
-    if maze.width < 8 or maze.height < 8:
-        print("The maze is too small to apply the pattern, skipping it...")
-    else:
-        maze.pattern()
-    maze.dfs(maze.maze[0])
-    if not config.perfect:
-        maze.not_perfect_maze()
-    maze.reset_visited()
+    if solve:
+        maze.bfs_resolution(maze.entry, maze.exit)
     return maze
 
 
