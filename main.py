@@ -56,6 +56,15 @@ class MazeState():
         self.minotaur_image: mlx.Mlx | None = None
         self.minotaur_width: int = 0
         self.minotaur_height: int = 0
+        self.teseu_image: mlx.Mlx | None = None
+        self.teseu_width: int = 0
+        self.teseu_height: int = 0
+        self.teseu_victory: mlx.Mlx | None = None
+        self.teseu_victory_width: int = 0
+        self.teseu_victory_height: int = 0
+        self.minotaur_victory: mlx.Mlx | None = None
+        self.minotaur_victory_width: int = 0
+        self.minotaur_victory_height: int = 0
 
     def initialize_mlx(self) -> None:
         self.margem_size, self.wall_size, self.cell_size = (
@@ -132,6 +141,25 @@ def draw_minotaur(app: MazeState, cell: Cell) -> None:
     cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
     app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
                                     app.minotaur_image, cx, cy)  # type: ignore
+    
+
+def draw_teseu(app: MazeState, cell: Cell) -> None:
+    if app.teseu_image is None:
+        return
+    cx = app.margem_size + cell.x * (app.cell_size + app.wall_size)
+    cy = app.margem_size + cell.y * (app.cell_size + app.wall_size)
+    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
+                                    app.teseu_image, cx, cy)  # type: ignore
+    
+
+def draw_teseu_victory(app: MazeState, cell: Cell) -> None:
+    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
+                                    app.teseu_victory, 0, 0)  # type: ignore
+    
+
+def draw_minotaur_victory(app: MazeState, cell: Cell) -> None:
+    app.ptr.mlx_put_image_to_window(app.mlx_ptr, app.win,
+                                    app.minotaur_victory, 0, 0)  # type: ignore
 
 
 def draw_connection(app: MazeState, cell1: Cell,
@@ -212,7 +240,6 @@ def draw_full_maze_game(app: MazeState, color: int) -> None:
         draw_maze_cell(app, cell, color)
     draw_cell(app, app.teseu_cell, 0x00FF00)
     draw_cell(app, app.exit_cell, 0xFF0000)
-    draw_cell(app, app.minotaur_cell, 0xFFFF00)
     app.expose_hook(None)  # type: ignore
 
 
@@ -401,25 +428,31 @@ def game_start(app: MazeState) -> None:
                                                  app.minotaur_cell)
                     )
         draw_entry_exit(app)
-        cell = app.crete_maze.teseu_path[app.resolution_idx_t]
+        app.resolution_idx_t = 0
+        app.teseu_cell = app.crete_maze.teseu_path[app.resolution_idx_t]
         cell1 = app.crete_maze.teseu_path[
             app.resolution_idx_t + 1] if app.resolution_idx_t + 1 < len(
                 app.crete_maze.teseu_path) else None
 
-        if cell == app.minotaur_cell:
+        if app.teseu_cell == app.minotaur_cell:
             print("Teseu reached the Minotaur!")
             app.state = State.DONE
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+            app.image = None
+            draw_teseu_victory(app, app.teseu_cell)
             return
         if cell1 is None:
             app.state = State.DONE
             return
-        draw_cell(app, cell, 0xFFFF00)
-
-        draw_cell(app, cell1, 0xFFFF00)
-
-        draw_maze_cell(app, cell, app.maze_color)
-
+        draw_teseu(app, app.teseu_cell)
+        app.teseu_cell = cell1
+        draw_minotaur(app, app.minotaur_cell)
         app.expose_hook(None)
+
+        draw_teseu(app, app.teseu_cell)
+
+        draw_minotaur(app, app.minotaur_cell)
+
         time.sleep(0.01)
         app.crete_maze.teseu_idx += 1
         if app.crete_maze.teseu_idx % 2 != 0:
@@ -439,7 +472,10 @@ def game_start(app: MazeState) -> None:
         if cell == app.exit_cell:
             app.state = State.DONE
             print("Minotaur reached the exit! Teseu loses!")
-            app.last_state = State.RESOLUTION_SHOWN
+            app.last_state = State.DONE
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+            app.image = None
+            draw_minotaur_victory(app, app.minotaur_cell)
             return
         if cell1 is None:
             app.state = State.DONE
@@ -448,8 +484,9 @@ def game_start(app: MazeState) -> None:
         draw_minotaur(app, cell)
 
         app.minotaur_cell = cell1
-
+        draw_teseu(app, app.teseu_cell)
         app.expose_hook(None)
+        draw_teseu(app, app.teseu_cell)
         draw_minotaur(app, app.minotaur_cell)
         time.sleep(0.01)
         app.resolution_idx_m += 1
@@ -465,7 +502,21 @@ def game_start(app: MazeState) -> None:
 def key_game_hook(keycode: int, app: MazeState) -> None:
     if keycode == 65307:  # ESC
         print("Exiting the game...")
-        app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+        if app.minotaur_image is not None:
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.minotaur_image)  # type: ignore
+            app.minotaur_image = None
+        if app.image is not None:
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+            app.image = None
+        if app.teseu_image is not None:
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.teseu_image)  # type: ignore
+            app.teseu_image = None
+        if app.teseu_victory is not None:
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.teseu_victory)  # type: ignore
+            app.teseu_victory = None
+        if app.minotaur_victory is not None:
+            app.ptr.mlx_destroy_image(app.mlx_ptr, app.minotaur_victory)  # type: ignore
+            app.minotaur_victory = None
         app.ptr.mlx_destroy_window(app.mlx_ptr, app.win)  # type: ignore
         app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
         app.state = State.DONE
@@ -497,6 +548,18 @@ def graphics(mode: str = "normal") -> None:
          app.minotaur_height) = app.ptr.mlx_xpm_file_to_image(
                             app.mlx_ptr,
                             "baixados.xpm")  # type: ignore
+        (app.teseu_image, app.teseu_width,
+         app.teseu_height) = app.ptr.mlx_xpm_file_to_image(
+                            app.mlx_ptr,
+                            "teseu.xpm")  # type: ignore
+        (app.teseu_victory, app.teseu_victory_width,
+         app.teseu_victory_height) = app.ptr.mlx_xpm_file_to_image(
+                            app.mlx_ptr,
+                            "teseu_victory.xpm")  # type: ignore
+        (app.minotaur_victory, app.minotaur_victory_width,
+         app.minotaur_victory_height) = app.ptr.mlx_xpm_file_to_image(
+                            app.mlx_ptr,
+                            "mino.xpm")  # type: ignore
         draw_full_maze_game(app, app.maze_color)
         app.ptr.mlx_key_hook(app.win, key_game_hook, app)  # type: ignore
         app.ptr.mlx_expose_hook(app.win, app.expose_hook, None)  # type: ignore
