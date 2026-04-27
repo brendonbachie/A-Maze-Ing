@@ -67,6 +67,7 @@ class MazeState():
         self.minotaur_victory: mlx.Mlx | None = None
         self.minotaur_victory_width: int = 0
         self.minotaur_victory_height: int = 0
+        self.ariadne: bool = False
 
     def initialize_mlx(self) -> None:
         self.margem_size, self.wall_size, self.cell_size = (
@@ -471,6 +472,7 @@ def game_start(app: MazeState) -> None:
         if app.teseu_cell == app.minotaur_cell:
             print("Teseu reached the Minotaur!")
             app.state = State.PLAYER_MOVE
+            app.minotaur_cell = app.exit_cell
             return
         draw_minotaur(app, app.minotaur_cell)
         app.expose_hook(None)
@@ -552,9 +554,21 @@ def move_teseu(app: MazeState, direction: str) -> None:
     app.teseu_cell = next_cell
     draw_teseu(app, app.teseu_cell)
     draw_cell(app, maze_cell, app.maze_color)
+    if app.ariadne:
+        ariadne_path(app)
     app.expose_hook(None)
     draw_teseu(app, app.teseu_cell)
     app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
+
+
+def ariadne_path(app: MazeState) -> None:
+    app.maze.visited_cells_resolution = []
+    app.maze.visited_cells_resolution = (
+        app.maze.bfs_game(app.teseu_cell,
+                          app.exit_cell)
+    )
+    if app.ariadne:
+        draw_resolution_path(app, 0xFFD700)
 
 
 def key_game_hook(keycode: int, app: MazeState) -> None:
@@ -596,6 +610,17 @@ def key_game_hook(keycode: int, app: MazeState) -> None:
                 move_teseu(app, "left")
             elif keycode == 65363:  # Right
                 move_teseu(app, "right")
+    if keycode == 97:  # A
+        if not app.ariadne:
+            app.ariadne = True
+        elif app.ariadne:
+            draw_rect(app, 0, 0, app.maze_pixel_width, app.maze_pixel_height,
+                      app.background_color)
+            for cell in app.maze.pattern_cells:
+                draw_cell(app, cell, app.pattern_color)
+            draw_full_maze_game(app, app.maze_color)
+            app.ariadne = False
+
 
 def graphics(mode: str = "normal") -> None:
 
