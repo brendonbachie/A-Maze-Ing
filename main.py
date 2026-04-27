@@ -20,6 +20,7 @@ class State(Enum):
     TESEU = 7
     MINOTAUR = 8
     GAME = 9
+    PLAYER_MOVE = 10
 
 
 class MazeState():
@@ -253,6 +254,8 @@ def loop_idle(_: None) -> None:
 
 
 def generate(app: MazeState) -> None:
+    if app.state != State.GENERATE:
+        return
     app.entry_cell = app.maze.entry
     app.exit_cell = app.maze.exit
     cell = app.maze.visited_cells[app.generate_idx]
@@ -272,7 +275,7 @@ def solve(app: MazeState) -> None:
     cell1 = app.maze.visited_cells_resolution[
         app.resolution_idx + 1] if app.resolution_idx + 1 < len(
             app.maze.visited_cells_resolution) else None
-    if cell1 is None:
+    if cell1 is None or app.state != State.RESOLUTION:
         app.state = State.DONE
         return
     draw_cell(app, cell, app.path_color)
@@ -310,6 +313,7 @@ def change_color(app: MazeState) -> None:
         draw_resolution_path(app, app.path_color)
         draw_entry_exit(app)
 
+    draw_entry_exit(app)
     app.expose_hook(None)
 
 
@@ -330,6 +334,10 @@ def show_hide_path(app: MazeState) -> None:
               " after the maze is solved.")
         return
     if app.state == State.RESOLUTION_HIDDEN:
+        draw_rect(app, 0, 0, app.maze_pixel_width, app.maze_pixel_height,
+                  app.background_color)
+        for cell in app.maze.pattern_cells:
+            draw_cell(app, cell, app.pattern_color)
         draw_full_maze(app, app.maze_color)
         app.state = State.DONE
         return
@@ -361,6 +369,9 @@ def key_hook(keycode: int, app: MazeState) -> None:
         app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
 
     if keycode == 103:  # G
+        if app.is_generate:
+            print("A maze has already been generated.")
+            return
         app.is_generate = True
         if app.state == State.GENERATE:
             print("The maze is already being generated.")
@@ -459,10 +470,7 @@ def game_start(app: MazeState) -> None:
         app.teseu_cell = cell1
         if app.teseu_cell == app.minotaur_cell:
             print("Teseu reached the Minotaur!")
-            app.state = State.DONE
-            app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
-            app.image = None
-            draw_teseu_victory(app, app.teseu_cell)
+            app.state = State.PLAYER_MOVE
             return
         draw_minotaur(app, app.minotaur_cell)
         app.expose_hook(None)
@@ -506,12 +514,47 @@ def game_start(app: MazeState) -> None:
         draw_minotaur(app, app.minotaur_cell)
         time.sleep(0.05)
         app.resolution_idx_m += 1
-        app.crete_maze.minotaur_idx += 1
-        if app.crete_maze.minotaur_idx < 10:
-            app.state = State.TESEU
-            return
         app.state = State.TESEU
         return
+
+
+def move_teseu(app: MazeState, direction: str) -> None:
+    if app.state != State.PLAYER_MOVE:
+        return
+    if direction == "up":
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x, app.teseu_cell.y - 1)
+        if next_cell == (-1, -1) or next_cell.south:
+            return
+        
+    elif direction == "down":
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x, app.teseu_cell.y + 1)
+        if next_cell == (-1, -1) or next_cell.north:
+            return
+    elif direction == "left":
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x - 1, app.teseu_cell.y)
+        if next_cell == (-1, -1) or next_cell.east:
+            return
+    elif direction == "right":
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x + 1, app.teseu_cell.y)
+        if next_cell == (-1, -1) or next_cell.west:
+            return
+    else:
+        return
+    if next_cell == app.exit_cell:
+        print("Teseu reached the exit! Teseu wins!")
+        app.state = State.DONE
+        app.last_state = State.DONE
+        app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
+        app.image = None
+        draw_teseu_victory(app, app.teseu_cell)
+        return
+    maze_cell = app.teseu_cell
+    app.teseu_cell = next_cell
+    draw_teseu(app, app.teseu_cell)
+    draw_cell(app, maze_cell, app.maze_color)
+    app.expose_hook(None)
+    draw_teseu(app, app.teseu_cell)
+    app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
 
 
 def key_game_hook(keycode: int, app: MazeState) -> None:
@@ -543,7 +586,16 @@ def key_game_hook(keycode: int, app: MazeState) -> None:
         print("Starting the game...")
         app.state = State.TESEU
         app.ptr.mlx_loop_hook(app.mlx_ptr, game_start, app)  # type: ignore
-
+    if keycode in [65362, 65364, 65361, 65363]:
+        if app.state == State.PLAYER_MOVE:
+            if keycode == 65362:  # Up
+                move_teseu(app, "up")
+            elif keycode == 65364:  # Down
+                move_teseu(app, "down")
+            elif keycode == 65361:  # Left
+                move_teseu(app, "left")
+            elif keycode == 65363:  # Right
+                move_teseu(app, "right")
 
 def graphics(mode: str = "normal") -> None:
 
@@ -590,7 +642,6 @@ def graphics(mode: str = "normal") -> None:
         app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
         app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
         return
-
     app = MazeState()
     app.initialize_mlx()
     app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width,
@@ -603,6 +654,8 @@ def graphics(mode: str = "normal") -> None:
     for cell in app.maze.pattern_cells:
         draw_cell(app, cell, app.pattern_color)
 
+    if app.state == State.DONE:
+        app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
     app.ptr.mlx_key_hook(app.win, key_hook, app)  # type: ignore
     app.ptr.mlx_expose_hook(app.win, app.expose_hook, None)  # type: ignore
     app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 300,

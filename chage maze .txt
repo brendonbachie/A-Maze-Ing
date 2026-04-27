@@ -1,0 +1,30 @@
+        app.crete_maze.teseu_idx += 1
+        if app.crete_maze.teseu_idx == 20:
+            saved_teseu_x, saved_teseu_y = app.teseu_cell.x, app.teseu_cell.y
+            saved_mino_x, saved_mino_y = app.minotaur_cell.x, app.minotaur_cell.y
+
+            app.crete_maze = game.generate_game_state(app.config)
+            app.exit_cell = app.crete_maze.exit_pos
+
+            # busca as células no NOVO labirinto pelas coordenadas salvas
+            app.teseu_cell = app.crete_maze.maze.get_cell(saved_teseu_x, saved_teseu_y)
+            app.minotaur_cell = app.crete_maze.maze.get_cell(saved_mino_x, saved_mino_y)
+
+            app.crete_maze.minotaur_path = app.crete_maze.maze.bfs_game(
+                app.minotaur_cell, app.exit_cell)
+            app.crete_maze.teseu_path = app.crete_maze.maze.bfs_game(
+                app.teseu_cell, app.minotaur_cell)
+
+            draw_rect(app, 0, 0, app.maze_pixel_width,
+                      app.maze_pixel_height, app.background_color)
+            draw_full_maze_game(app, app.maze_color)
+            draw_teseu(app, app.teseu_cell)
+            draw_minotaur(app, app.minotaur_cell)
+            app.expose_hook(None)
+            app.resolution_idx_m = 0
+            return
+        if app.crete_maze.teseu_idx % 2 != 0:
+            return
+        else:
+            app.state = State.MINOTAUR
+            return
