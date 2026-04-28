@@ -12,8 +12,9 @@ debug:
 	python -m pdb main.py
 
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type d -name ".mypy_cache" -exec rm -rf {} +
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type d -name ".mypy_cache" -exec rm -rf {} +
+	echo "Arquivos apagados com sucesso!"
 
 
 lint:
@@ -21,5 +22,5 @@ lint:
 	python3 -m mypy .
 
 lint-strict:
-	-$(PYTHON) -m flake8 . --exclude $(VENV_NAME)
-	-$(PYTHON) -m mypy . --strict
+	python3 -m flake8 . --exclude mlx
+	python3 -m mypy . --strict
