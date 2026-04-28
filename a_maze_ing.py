@@ -51,7 +51,7 @@ def graphics(mode: str = "normal") -> None:
         return
     app = state.MazeState()
     app.initialize_mlx()
-    app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width,
+    app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width + 500,
                                      app.maze_pixel_height,
                                      "Maze Generator")  # type: ignore
     draw.draw_rect(app, 0, 0,

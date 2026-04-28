@@ -35,4 +35,3 @@ class GameState:
                                                   crete.exit_pos
                                                   )
         return crete
-

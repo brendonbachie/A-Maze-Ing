@@ -1,6 +1,5 @@
 from map import Cell
 from state import MazeState
-from validate_config import Configuration as cfg
 
 
 def put_pixel(app: MazeState, x: int, y: int, color: int) -> None:

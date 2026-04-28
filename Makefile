@@ -1,10 +1,26 @@
-all:
+CONFIG = config.txt
+REQUIREMENTS = "requirements.txt"
+MYPY_FLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 install:
-	pip install -r requirements.txt
+	pip install -r $(requirements.txt)
+
 run:
-	python main.py
+	python3 a_maze_ing.py
+
 debug:
-	python -m pdb main.py
+	python3 -m pdb a_maze_ing.py
+
 clean:
-	rm -rf __pycache__ .mypy_cache
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type d -name ".mypy_cache" -exec rm -rf {} +
+	echo "Arquivos apagados com sucesso!"
+
+
+lint:
+	python3 -m flake8 
+	python3 -m mypy .
+
+lint-strict:
+	python3 -m flake8
+	python3 -m mypy --strict .
