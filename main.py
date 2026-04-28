@@ -535,7 +535,7 @@ def ariadne_path(app: MazeState) -> None:
     app.crete_maze.maze.visited_cells_resolution = []
     app.crete_maze.maze.visited_cells_resolution = (
         app.crete_maze.maze.bfs_game(app.teseu_cell,
-                                      app.exit_cell)
+                                     app.exit_cell)
     )
     if app.ariadne:
         draw_resolution_path_game(app, 0xFFD700)
@@ -545,20 +545,24 @@ def move_teseu(app: MazeState, direction: str) -> None:
     if app.state != State.PLAYER_MOVE:
         return
     if direction == "up":
-        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x, app.teseu_cell.y - 1)
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x,
+                                                 app.teseu_cell.y - 1)
         if next_cell == (-1, -1) or next_cell.south:
             return
-        
+
     elif direction == "down":
-        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x, app.teseu_cell.y + 1)
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x,
+                                                 app.teseu_cell.y + 1)
         if next_cell == (-1, -1) or next_cell.north:
             return
     elif direction == "left":
-        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x - 1, app.teseu_cell.y)
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x - 1,
+                                                 app.teseu_cell.y)
         if next_cell == (-1, -1) or next_cell.east:
             return
     elif direction == "right":
-        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x + 1, app.teseu_cell.y)
+        next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x + 1,
+                                                 app.teseu_cell.y)
         if next_cell == (-1, -1) or next_cell.west:
             return
     else:
