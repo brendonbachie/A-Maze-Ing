@@ -229,6 +229,15 @@ def draw_resolution_path(app: MazeState, color: int) -> None:
     app.expose_hook(None)
 
 
+def draw_resolution_path_game(app: MazeState, color: int) -> None:
+    for cell, cell1 in zip(app.crete_maze.maze.visited_cells_resolution,
+                           app.crete_maze.maze.visited_cells_resolution[1:]):
+        draw_cell(app, cell, color)
+        draw_connection(app, cell, cell1, color)
+    draw_cell(app, app.exit_cell, 0xFF0000)
+    app.expose_hook(None)
+
+
 def draw_full_maze(app: MazeState, color: int) -> None:
     for cell in app.maze.visited_cells:
         draw_maze_cell(app, cell, color)
@@ -472,7 +481,6 @@ def game_start(app: MazeState) -> None:
         if app.teseu_cell == app.minotaur_cell:
             print("Teseu reached the Minotaur!")
             app.state = State.PLAYER_MOVE
-            app.minotaur_cell = app.exit_cell
             return
         draw_minotaur(app, app.minotaur_cell)
         app.expose_hook(None)
@@ -506,7 +514,10 @@ def game_start(app: MazeState) -> None:
         if cell1 is None:
             app.state = State.DONE
             return
-
+        if cell == app.teseu_cell:
+            print("Teseu reached the Minotaur!")
+            app.state = State.PLAYER_MOVE
+            return
         draw_minotaur(app, cell)
 
         app.minotaur_cell = cell1
@@ -518,6 +529,16 @@ def game_start(app: MazeState) -> None:
         app.resolution_idx_m += 1
         app.state = State.TESEU
         return
+
+
+def ariadne_path(app: MazeState) -> None:
+    app.crete_maze.maze.visited_cells_resolution = []
+    app.crete_maze.maze.visited_cells_resolution = (
+        app.crete_maze.maze.bfs_game(app.teseu_cell,
+                                      app.exit_cell)
+    )
+    if app.ariadne:
+        draw_resolution_path_game(app, 0xFFD700)
 
 
 def move_teseu(app: MazeState, direction: str) -> None:
@@ -556,19 +577,11 @@ def move_teseu(app: MazeState, direction: str) -> None:
     draw_cell(app, maze_cell, app.maze_color)
     if app.ariadne:
         ariadne_path(app)
+        draw_connection(app, maze_cell, app.teseu_cell, app.maze_color)
+
     app.expose_hook(None)
     draw_teseu(app, app.teseu_cell)
     app.ptr.mlx_loop_hook(app.mlx_ptr, loop_idle, None)  # type: ignore
-
-
-def ariadne_path(app: MazeState) -> None:
-    app.maze.visited_cells_resolution = []
-    app.maze.visited_cells_resolution = (
-        app.maze.bfs_game(app.teseu_cell,
-                          app.exit_cell)
-    )
-    if app.ariadne:
-        draw_resolution_path(app, 0xFFD700)
 
 
 def key_game_hook(keycode: int, app: MazeState) -> None:
