@@ -1,5 +1,5 @@
 from validate_config import Configuration
-from map import Cell, MazeGenerator, maze_generator
+from package.map import Cell, MazeGenerator, maze_generator
 
 
 class GameState:

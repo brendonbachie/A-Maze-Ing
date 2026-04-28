@@ -3,8 +3,8 @@ import time
 import random
 import validate_config
 from validate_config import Configuration as cfg
-import map
-from map import Cell
+import package.map as map
+from package.map import Cell
 from enum import Enum
 import sys
 import game
