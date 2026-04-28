@@ -244,20 +244,17 @@ class MazeGenerator():
         path.reverse()
         return path
 
-
-def maze_generator(config: cfg, solve: bool) -> MazeGenerator:
-    maze = MazeGenerator(config)
-    if maze.width < 8 or maze.height < 8:
-        print("The maze is too small to apply the pattern, skipping it...")
-    else:
-        maze.pattern()
-    maze.dfs(maze.maze[0])
-    if not config.perfect:
-        maze.not_perfect_maze()
-    maze.reset_visited()
-    if solve:
-        maze.bfs_resolution(maze.entry, maze.exit)
-    return maze
+    def generate(self, solve: bool) -> None:
+        if self.width < 8 or self.height < 8:
+            print("The maze is too small to apply the pattern, skipping it...")
+        else:
+            self.pattern()
+        self.dfs(self.maze[0])
+        if not self.perfect:
+            self.not_perfect_maze()
+        self.reset_visited()
+        if solve:
+            self.bfs_resolution(self.entry, self.exit)
 
 
 def get_hex(cell: Cell) -> str:
