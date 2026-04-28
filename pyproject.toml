@@ -11,8 +11,8 @@ dependencies = [
     "mlx==2.2.0"
 ]
 authors = [
-	name = "Daniel vieira"
-	name = "Brendon bachie"
+	{name = "Brendon bachie"},
+	{name = "Daniel vieira"}
 ]
 
 [tool.mypy]

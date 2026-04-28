@@ -10,4 +10,4 @@
 # Bonus
 ## in the game mode:
  * S -> Start
- * A -> Skill: ariadne path (Only after the Minotaur diesz)
+ * A -> Skill: ariadne path (Only after the Minotaur dies)
