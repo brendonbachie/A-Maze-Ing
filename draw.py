@@ -139,9 +139,11 @@ def draw_full_maze(app: MazeState, color: int) -> None:
 def draw_full_maze_game(app: MazeState, color: int) -> None:
     for cell in app.crete_maze.maze.visited_cells:
         draw_maze_cell(app, cell, color)
-    draw_cell(app, app.teseu_cell, 0x00FF00)
     draw_cell(app, app.exit_cell, 0xFF0000)
+    if app.state != app.state.PLAYER_MOVE:
+        draw_cell(app, app.teseu_cell, 0x00FF00)
     app.expose_hook(None)
+    draw_teseu(app, app.teseu_cell)
 
 
 def loop_idle(_: None) -> None:

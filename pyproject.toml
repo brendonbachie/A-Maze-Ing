@@ -3,17 +3,15 @@ requires = ["setuptools>=68", "wheel>=0.41"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "maze_gen.py"
-version = "1.0m"
+name = "mazegen.py"
+version = "1.0.0"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "mlx==2.2.0"
-]
+dependencies = []
 
 authors = [
-	{name = "Brendon bachie"},
-	{name = "Daniel vieira"}
+	{name = "Brendon Bachie"},
+	{name = "Daniel Vieira"}
 ]
 
 [tool.mypy]
@@ -25,6 +23,6 @@ disallow_untyped_defs = true
 check_untyped_defs = true
 
 [tool.flake8]
-max-line-length = 88
+max-line-length = 80
 extend-ignore = ["E203", "W503"]
 exclude = [".mypy_cache", ".pytest_cache", "__pycache__"]

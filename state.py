@@ -17,6 +17,7 @@ class State(Enum):
     MINOTAUR = 8
     GAME = 9
     PLAYER_MOVE = 10
+    END_GAME = 11
 
 
 class MazeState():
