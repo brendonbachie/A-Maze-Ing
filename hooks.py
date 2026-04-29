@@ -227,7 +227,9 @@ def game_start(app: MazeState) -> None:
         draw.draw_teseu(app, app.teseu_cell)
         app.teseu_cell = cell1
         if app.teseu_cell == app.minotaur_cell:
-            print("Teseu reached the Minotaur!")
+            print("\nTeseu reached the Minotaur!!!\n"
+                  "Use directional buttons for move.\n"
+                  "Find the exit or press 'A' for Ariadne's help\n")
             draw.draw_teseu(app, app.teseu_cell)
             app.state = State.PLAYER_MOVE
             draw.draw_full_maze_game(app, app.maze_color)
@@ -257,7 +259,7 @@ def game_start(app: MazeState) -> None:
 
         if cell == app.exit_cell:
             app.state = State.END_GAME
-            print("Minotaur reached the exit! Teseu loses!")
+            print("\nMinotaur reached the exit! Teseu loses!\n")
             app.last_state = State.DONE
             app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
             app.image = None
@@ -267,7 +269,9 @@ def game_start(app: MazeState) -> None:
             app.state = State.DONE
             return
         if cell == app.teseu_cell:
-            print("Teseu reached the Minotaur!")
+            print("\nTeseu reached the Minotaur!!!\n"
+                  "Use directional buttons for move.\n"
+                  "Find the exit or press 'A' for Ariadne's help\n")
             draw.draw_teseu(app, app.teseu_cell)
             app.state = State.PLAYER_MOVE
             draw.draw_full_maze_game(app, app.maze_color)
@@ -323,7 +327,7 @@ def move_teseu(app: MazeState, direction: str) -> None:
     else:
         return
     if next_cell == app.exit_cell:
-        print("Teseu reached the exit! Teseu wins!")
+        print("\nTeseu reached the exit! Teseu wins!\n")
         app.state = State.END_GAME
         app.last_state = State.DONE
         app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore

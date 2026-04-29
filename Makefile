@@ -14,7 +14,7 @@ debug:
 clean:
 	@find . -type d -name "__pycache__" -exec rm -rf {} +
 	@find . -type d -name ".mypy_cache" -exec rm -rf {} +
-	echo "Arquivos apagados com sucesso!"
+	@echo "\n===Arquivos apagados com sucesso!===\n"
 
 
 lint:
