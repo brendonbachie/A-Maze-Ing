@@ -1,3 +1,9 @@
+"""Validação e leitura da configuração do labirinto.
+
+Lê o arquivo de configuração, interpreta chaves e valores, valida limites
+e retorna um objeto Configuration usado para inicializar o jogo.
+"""
+
 # WIDTH=20
 # HEIGHT=15
 # ENTRY=0,0
@@ -8,7 +14,13 @@
 # Criei uma classe Configuration para armazenar as configurações do labirinto
 
 class Configuration():
+    """Armazena configurações do labirinto lidas do arquivo.
+
+    Os campos incluem dimensões, posições especiais, arquivo de saída,
+    flags de comportamento e semente aleatória.
+    """
     def __init__(self) -> None:
+        """Inicializa valores padrão para a configuração."""
         # verificar se os valores são negativos (width e height)
         self.width = -1
         self.height = -1
@@ -31,6 +43,16 @@ class Configuration():
 # pra tupla de ints, e validar que estão no formato correto. Se não tiver,
 # vai dar erro
 def parse_coordinates(value: str, width: int, height: int) -> tuple[int, int]:
+    """Converte uma string "x,y" em uma tupla de inteiros (x, y).
+
+    Args:
+        value: String contendo coordenadas separadas por vírgula.
+        width: Largura usada para validação (não usada diretamente aqui).
+        height: Altura usada para validação (não usada diretamente aqui).
+
+    Returns:
+        Tupla (x, y) com valores inteiros.
+    """
     x_str, y_str = value.split(",")
     x, y = int(x_str.strip()), int(y_str.strip())
     return (x, y)
@@ -39,6 +61,17 @@ def parse_coordinates(value: str, width: int, height: int) -> tuple[int, int]:
 # A parser_config é necessária pra pegar o arquivo de configuração lido,
 # transformar num dicionário de chave e valor, e  retornar esse dicionário
 def parser_config(conf_file: str) -> dict[str, str]:
+    """Analisa o conteúdo do arquivo de configuração e retorna um dicionário.
+
+    Linhas comentadas ou vazias são ignoradas. Cada linha válida deve ser no
+    formato KEY=VALUE. Chaves duplicadas acarretam ValueError.
+
+    Args:
+        conf_file: Conteúdo do arquivo de configuração como string.
+
+    Returns:
+        Dicionário mapeando chaves para valores como strings.
+    """
     confs = {}
     for line in conf_file.splitlines():
         if line.strip() and not line.startswith("#"):
@@ -54,6 +87,17 @@ def parser_config(conf_file: str) -> dict[str, str]:
 # Se algum valor for inválido, ele vai imprimir o erro e retornar o objeto
 # Configuration com os valores padrão
 def validate_config(config: dict[str, str]) -> Configuration:
+    """Valida um dicionário de configuração e retorna um objeto Configuration.
+
+    Verifica presença de chaves obrigatórias, valores dentro dos limites e
+    coerência entre posições especiais. Em caso de erro, o programa é abortado.
+
+    Args:
+        config: Dicionário com chaves e valores do arquivo de configuração.
+
+    Returns:
+        Uma instância de Configuration com os valores validados.
+    """
     configuration = Configuration()
     configs_required = [
         "WIDTH",
@@ -143,6 +187,13 @@ def validate_config(config: dict[str, str]) -> Configuration:
 # chamar as funções de parser e validação, e retornar o objeto Configuration
 # com os valores validados.
 def read_config_file() -> Configuration:
+    """Lê o arquivo config.txt, faz parsing e validação, e retorna Configuration.
+
+    Em caso de erro, imprime a mensagem e encerra o programa.
+
+    Returns:
+        Instância de Configuration com os valores validados.
+    """
     conf_dict = {}
     conf = None
     try:

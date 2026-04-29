@@ -1,4 +1,3 @@
-from validate_config import Configuration as cfg
 import random
 
 
@@ -13,62 +12,128 @@ class Cell():
         self.visited = False
 
 
-class MazeGenerator():
-    def __init__(self, configuration: cfg):
-        self.width = configuration.width
-        self.height = configuration.height
-        self.output_file = configuration.output_file
-        self.perfect = configuration.perfect
-        self.seed = configuration.seed
-        self.gamemode = configuration.gamemode
-        self.maze: list[Cell] = [Cell(x, y) for y in range(
-            self.height) for x in range(self.width)]
+class MazeGenerator:
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        output_file: str,
+        perfect: bool,
+        entry: tuple[int, int],
+        exit: tuple[int, int],
+        seed: int | None = None
+    ) -> None:
+
+        self.validate_inputs(
+            width,
+            height,
+            output_file,
+            perfect,
+            seed,
+            entry,
+            exit
+        )
+
+        self.width = width
+        self.height = height
+        self.output_file = output_file
+        self.perfect = perfect
+        self.seed = seed
+
+        self.maze: list[Cell] = [
+            Cell(x, y)
+            for y in range(self.height)
+            for x in range(self.width)
+        ]
+
         self.visited_cells: list[Cell] = []
         self.visited_cells_resolution: list[Cell] = []
-        self.teseu = self.get_cell(configuration.teseu[0],
-                                   configuration.teseu[1])
-        self.minotaur = self.get_cell(configuration.minotaur[0],
-                                      configuration.minotaur[1])
         self.pattern_cells: list[Cell] = []
-        self.entry: Cell = self.get_cell(configuration.entry[0],
-                                         configuration.entry[1])
-        self.exit: Cell = self.get_cell(configuration.exit[0],
-                                        configuration.exit[1])
+
+        self.entry = self.get_cell(entry[0], entry[1])
+        self.exit = self.get_cell(exit[0], exit[1])
 
         if self.seed is not None:
             random.seed(self.seed)
+
+    def validate_inputs(
+        self,
+        width: int,
+        height: int,
+        output_file: str,
+        perfect: bool,
+        seed: int | None,
+        entry: tuple[int, int],
+        exit: tuple[int, int]
+    ) -> None:
+
+        if not isinstance(width, int) or width <= 0:
+            raise ValueError("width must be a positive integer")
+
+        if not isinstance(height, int) or height <= 0:
+            raise ValueError("height must be a positive integer")
+
+        if not isinstance(output_file, str) or not output_file.strip():
+            raise ValueError("output_file must be a valid string")
+
+        if not isinstance(perfect, bool):
+            raise ValueError("perfect must be True or False")
+
+        if seed is not None and not isinstance(seed, int):
+            raise ValueError("seed must be an integer or None")
+
+        if (
+            not isinstance(entry, tuple)
+            or len(entry) != 2
+            or not all(isinstance(i, int) for i in entry)
+        ):
+            raise ValueError("entry must be a tuple like (x, y)")
+
+        if not (0 <= entry[0] < width and 0 <= entry[1] < height):
+            raise ValueError("entry is outside maze boundaries")
+
+        if exit is not None:
+            if (
+                not isinstance(exit, tuple)
+                or len(exit) != 2
+                or not all(isinstance(i, int) for i in exit)
+            ):
+                raise ValueError("exit must be a tuple like (x, y)")
+
+            if not (0 <= exit[0] < width and 0 <= exit[1] < height):
+                raise ValueError("exit is outside maze boundaries")
+
+            if entry == exit:
+                raise ValueError("entry and exit cannot be the same")
 
     def get_cell(self, x: int, y: int) -> Cell:
         for cell in self.maze:
             if x == cell.x and y == cell.y:
                 return cell
-        return Cell(-1, -1)
+        raise ValueError(f"Cell with coordinates ({x}, {y})"
+                         f" not found in the maze.")
 
     def pattern(self) -> None:
-        try:
-            x = self.width // 2
-            y = self.height // 2
+        x = self.width // 2
+        y = self.height // 2
 
-            coords = [
-                # 4 format
-                (y, x-1), (y, x-2), (y, x-3), (y-1, x-3), (y-2, x-3),
-                (y+1, x-1), (y+2, x-1),
+        coords = [
+            # 4 format
+            (y, x-1), (y, x-2), (y, x-3), (y-1, x-3), (y-2, x-3),
+            (y+1, x-1), (y+2, x-1),
 
-                # 2 format
-                (y, x+1), (y, x+2), (y, x+3), (y-1, x+3),
-                (y-2, x+3), (y-2, x+2),
-                (y-2, x+1), (y+1, x+1), (y+2, x+1), (y+2, x+2), (y+2, x+3)
-                ]
-            for coord in coords:
-                cell = self.get_cell(coord[1], coord[0])
-                if cell == self.entry or cell == self.exit:
-                    raise ValueError("The pattern cannot be applied because"
-                                     "the entry or exit is in the way.")
-                cell.visited = True
-                self.pattern_cells.append(cell)
-        except ValueError as e:
-            print(e)
-            exit(1)
+            # 2 format
+            (y, x+1), (y, x+2), (y, x+3), (y-1, x+3),
+            (y-2, x+3), (y-2, x+2),
+            (y-2, x+1), (y+1, x+1), (y+2, x+1), (y+2, x+2), (y+2, x+3)
+            ]
+        for coord in coords:
+            cell = self.get_cell(coord[1], coord[0])
+            if cell == self.entry or cell == self.exit:
+                raise ValueError("The pattern cannot be applied because"
+                                 "the entry or exit is in the way.")
+            cell.visited = True
+            self.pattern_cells.append(cell)
 
     def get_neighboard(self, cell: Cell, neigboards: list[Cell]) -> None:
         if cell.x + 1 < self.width:
@@ -219,42 +284,14 @@ class MazeGenerator():
                         if neighbor and neighbor not in self.pattern_cells:
                             neighbor.east = False
 
-    def bfs_game(self, start: Cell, goal: Cell) -> list[Cell]:
-        visited = {(start.x, start.y)}
-        finish = (-1, -1)
-        queue = [start]
-        parent = {(start.x, start.y): finish}
-        while queue:
-            current = queue.pop(0)
-            if current.x == goal.x and current.y == goal.y:
-                break
-            neighbors: list[Cell] = []
-            self.get_neighboard_opened(current, neighbors)
-            for neighbor in neighbors:
-                key = (neighbor.x, neighbor.y)
-                if key not in visited:
-                    visited.add(key)
-                    queue.append(neighbor)
-                    parent[key] = (current.x, current.y)
-        path = []
-        key = (goal.x, goal.y)
-        while key != finish:
-            path.append(self.get_cell(key[0], key[1]))
-            key = parent[key]
-        path.reverse()
-        return path
-
-    def generate(self, solve: bool) -> None:
-        if self.width < 8 or self.height < 8:
-            print("The maze is too small to apply the pattern, skipping it...")
-        else:
+    def generate(self) -> None:
+        if self.width > 8 or self.height > 8:
             self.pattern()
         self.dfs(self.maze[0])
         if not self.perfect:
             self.not_perfect_maze()
         self.reset_visited()
-        if solve:
-            self.bfs_resolution(self.entry, self.exit)
+        self.bfs_resolution(self.entry, self.exit)
 
 
 def get_hex(cell: Cell) -> str:

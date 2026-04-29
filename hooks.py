@@ -1,3 +1,10 @@
+"""Callbacks e manipuladores de eventos (hooks) do jogo.
+
+Este módulo contém funções que gerenciam a geração, solução, interação por
+teclado e fluxo do modo de jogo (Teseu vs Minotauro). Cada função é usada
+como hook no loop gráfico para animar ou controlar o estado do jogo.
+"""
+
 import draw
 import time
 import random
@@ -6,11 +13,28 @@ from state import MazeState, State
 
 
 def mino_teseu_position(app: MazeState) -> None:
+    """Define as posições iniciais de Teseu e do Minotauro no estado do jogo.
+
+    Atualiza app.teseu_cell e app.minotaur_cell com as posições geradas
+    previamente em app.crete_maze para preparar o início do modo de jogo.
+
+    Args:
+        app: Instância de MazeState representando o estado atual do aplicativo.
+    """
     app.teseu_cell = app.crete_maze.teseu_pos
     app.minotaur_cell = app.crete_maze.minotaur_pos
 
 
 def generate(app: MazeState) -> None:
+    """Hook que anima a geração do labirinto passo a passo.
+
+    Enquanto o estado for State.GENERATE, desenha a próxima célula gerada,
+    atualiza o índice e, quando a geração termina, desenha a entrada/saída
+    e muda o estado para DONE.
+
+    Args:
+        app: Instância de MazeState.
+    """
     if app.state != State.GENERATE:
         return
     app.entry_cell = app.maze.entry
@@ -27,6 +51,14 @@ def generate(app: MazeState) -> None:
 
 
 def solve(app: MazeState) -> None:
+    """Hook que anima a solução do labirinto passo a passo.
+
+    Quando o estado for State.RESOLUTION, desenha progressivamente o caminho
+    de resolução usando os índices de resolução e atualiza o estado ao fim.
+
+    Args:
+        app: Instância de MazeState.
+    """
     draw.draw_entry_exit(app)
     cell = app.maze.visited_cells_resolution[app.resolution_idx]
     cell1 = app.maze.visited_cells_resolution[
@@ -48,6 +80,14 @@ def solve(app: MazeState) -> None:
 
 
 def change_color(app: MazeState) -> None:
+    """Altera aleatoriamente as cores usadas para desenhar o labirinto.
+
+    Só é permitido quando o estado é DONE. Atualiza cores e redesenha o
+    labirinto e os elementos visíveis conforme o último estado.
+
+    Args:
+        app: Instância de MazeState.
+    """
     if not app.state == State.DONE:
         print("Cannot change color during animation.")
         return
@@ -75,6 +115,14 @@ def change_color(app: MazeState) -> None:
 
 
 def show_hide_path(app: MazeState) -> None:
+    """Alterna a exibição do caminho de resolução do labirinto.
+
+    Dependendo do último estado, oculta ou mostra o caminho de resolução.
+    Se o labirinto ainda não foi resolvido, imprime mensagem apropriada.
+
+    Args:
+        app: Instância de MazeState.
+    """
     if (app.state == State.DONE and
             app.last_state == State.RESOLUTION_SHOWN):
         app.state = State.RESOLUTION_HIDDEN
@@ -106,6 +154,14 @@ def show_hide_path(app: MazeState) -> None:
 
 
 def skip_animations(app: MazeState) -> None:
+    """Pula as animações de geração ou resolução e desenha o estado final.
+
+    Se o estado atual for GENERATE, desenha todo o labirinto. Se for
+    RESOLUTION, desenha imediatamente o caminho de resolução.
+
+    Args:
+        app: Instância de MazeState.
+    """
     if app.state == State.GENERATE:
         print("Skipping generation animation...")
         draw.draw_full_maze(app, app.maze_color)
@@ -122,6 +178,15 @@ def skip_animations(app: MazeState) -> None:
 
 
 def key_hook(keycode: int, app: MazeState) -> None:
+    """Processa eventos de teclado no modo de visualização do labirinto.
+
+    Atende teclas para gerar, resetar, resolver, alterar cores, alternar
+    caminho de resolução, pular animações e entrar no modo de jogo.
+
+    Args:
+        keycode: Código da tecla pressionada.
+        app: Instância de MazeState.
+    """
     if keycode == 65307:  # ESC
         app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
 
@@ -135,7 +200,6 @@ def key_hook(keycode: int, app: MazeState) -> None:
             return
         print("Generating the maze...")
         app.state = State.GENERATE
-        app.maze.generate(True)
         app.ptr.mlx_loop_hook(app.mlx_ptr, generate, app)  # type: ignore
 
     if keycode == 114:  # R
@@ -168,7 +232,7 @@ def key_hook(keycode: int, app: MazeState) -> None:
         app.ptr.mlx_loop_hook(app.mlx_ptr, draw.loop_idle, None)  # type:ignore
 
     if keycode == 115:  # S
-        if not app.is_generate:
+        if not app.is_generate or app.state == State.GENERATE:
             print("You need to generate a maze before.")
             return
         if app.state == State.RESOLUTION:
@@ -203,6 +267,7 @@ def key_hook(keycode: int, app: MazeState) -> None:
     if keycode == 109:  # M
         if app.config.gamemode:
             print("Opening the game...")
+            print("S - start the game")
             app.ptr.mlx_destroy_image(app.mlx_ptr, app.image)  # type: ignore
             app.ptr.mlx_destroy_window(app.mlx_ptr, app.win)  # type: ignore
             app.ptr.mlx_loop_exit(app.mlx_ptr)  # type: ignore
@@ -212,6 +277,15 @@ def key_hook(keycode: int, app: MazeState) -> None:
 
 
 def game_start(app: MazeState) -> None:
+    """Hook que executa o ciclo de movimentação no modo de jogo.
+
+    Alterna entre os estados TESEU e MINOTAUR, calcula caminhos e desenha
+    movimentos. Se um agente encontrar o outro ou a saída, ajusta o estado
+    do jogo e desenha a tela apropriada.
+
+    Args:
+        app: Instância de MazeState.
+    """
     if app.state == State.TESEU:
         app.crete_maze.teseu_path = (
                     app.crete_maze.maze.bfs_game(app.teseu_cell,
@@ -268,6 +342,9 @@ def game_start(app: MazeState) -> None:
         if cell1 is None:
             app.state = State.DONE
             return
+        draw.draw_minotaur(app, cell)
+
+        app.minotaur_cell = cell1
         if cell == app.teseu_cell:
             print("\nTeseu reached the Minotaur!!!\n"
                   "Use directional buttons for move.\n"
@@ -276,9 +353,6 @@ def game_start(app: MazeState) -> None:
             app.state = State.PLAYER_MOVE
             draw.draw_full_maze_game(app, app.maze_color)
             return
-        draw.draw_minotaur(app, cell)
-
-        app.minotaur_cell = cell1
         draw.draw_teseu(app, app.teseu_cell)
         app.expose_hook(None)
         draw.draw_teseu(app, app.teseu_cell)
@@ -290,6 +364,15 @@ def game_start(app: MazeState) -> None:
 
 
 def ariadne_path(app: MazeState) -> None:
+    """Desenha o caminho de ajuda (Ariadne) para Teseu durante o jogo.
+
+    Calcula o caminho de Teseu até a saída usando BFS e, se a opção Ariadne
+    estiver ativada, destaca o caminho na cor apropriada.
+
+    Args:
+        app: Instância de MazeState.
+    """
+    draw.draw_resolution_path_game(app, app.maze_color)
     app.crete_maze.maze.visited_cells_resolution = []
     app.crete_maze.maze.visited_cells_resolution = (
         app.crete_maze.maze.bfs_game(app.teseu_cell,
@@ -301,6 +384,16 @@ def ariadne_path(app: MazeState) -> None:
 
 
 def move_teseu(app: MazeState, direction: str) -> None:
+    """Move Teseu uma célula na direção indicada, se possível.
+
+    Verifica colisões com paredes e limites, atualiza a posição, redesenha
+    as células afetadas e, se Ariadne estiver ativa, atualiza o caminho.
+    Caso Teseu alcance a saída, finaliza o jogo com a tela de vitória.
+
+    Args:
+        app: Instância de MazeState.
+        direction: Uma das strings 'up', 'down', 'left', 'right'.
+    """
     if app.state != State.PLAYER_MOVE:
         return
     if direction == "up":
@@ -348,6 +441,15 @@ def move_teseu(app: MazeState, direction: str) -> None:
 
 
 def key_game_hook(keycode: int, app: MazeState) -> None:
+    """Processa eventos de teclado durante o modo de jogo.
+
+    Atende teclas para sair, iniciar o jogo, mover Teseu com as setas e
+    ativar/desativar Ariadne durante o modo PLAYER_MOVE.
+
+    Args:
+        keycode: Código da tecla pressionada.
+        app: Instância de MazeState.
+    """
     if keycode == 65307:  # ESC
         print("Exiting the game...")
         if app.minotaur_image is not None:

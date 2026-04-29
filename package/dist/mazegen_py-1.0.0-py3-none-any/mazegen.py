@@ -1,28 +1,8 @@
-"""Gerador de labirintos e utilitários relacionados.
-
-Este módulo fornece estruturas e funções para criar, modificar e
-resolver labirintos retangulares, bem como para serializar o resultado
-em um formato de saída específico.
-"""
-
 import random
 
 
 class Cell():
-    """Representa uma única célula do labirinto.
-
-    Cada célula conhece sua posição (x, y), o estado de suas quatro paredes
-    (north, south, east, west) e se já foi visitada durante a geração ou
-    resolução do labirinto.
-    """
-
     def __init__(self, x: int, y: int) -> None:
-        """Inicializa a célula com coordenadas e paredes fechadas.
-
-        Args:
-            x: Coordenada horizontal da célula.
-            y: Coordenada vertical da célula.
-        """
         self.x = x
         self.y = y
         self.north = True
@@ -33,13 +13,6 @@ class Cell():
 
 
 class MazeGenerator:
-    """Construtor e resolvedor de labirintos retangulares.
-
-    Fornece métodos para validar entradas, gerar o labirinto por DFS,
-    aplicar padrões iniciais, introduzir ciclos (quando não perfeito)
-    e resolver o labirinto por DFS ou BFS, além de utilitários de vizinhança.
-    """
-
     def __init__(
         self,
         width: int,
@@ -50,21 +23,7 @@ class MazeGenerator:
         exit: tuple[int, int],
         seed: int | None = None
     ) -> None:
-        """Inicializa o gerador de labirintos e valida os parâmetros.
 
-        Configura o estado interno necessário para gerar e resolver o
-        labirinto, incluindo a criação das células e o posicionamento da
-        entrada e da saída.
-
-        Args:
-            width: Largura do labirinto (número de colunas).
-            height: Altura do labirinto (número de linhas).
-            output_file: Caminho do arquivo de saída onde o labirinto será salvo.
-            perfect: Indica se o labirinto deve ser perfeito (sem ciclos).
-            entry: Tupla (x, y) indicando a posição de entrada.
-            exit: Tupla (x, y) indicando a posição de saída.
-            seed: Semente opcional para o gerador aleatório.
-        """
         self.validate_inputs(
             width,
             height,
@@ -107,12 +66,7 @@ class MazeGenerator:
         entry: tuple[int, int],
         exit: tuple[int, int]
     ) -> None:
-        """Valida os parâmetros de criação do labirinto.
 
-        Lança ValueError quando qualquer parâmetro está em desacordo com os
-        requisitos esperados (tipos e limites). Esta validação protege as
-        operações subsequentes de geração e resolução.
-        """
         if not isinstance(width, int) or width <= 0:
             raise ValueError("width must be a positive integer")
 
@@ -153,18 +107,6 @@ class MazeGenerator:
                 raise ValueError("entry and exit cannot be the same")
 
     def get_cell(self, x: int, y: int) -> Cell:
-        """Retorna a célula localizada nas coordenadas (x, y).
-
-        Args:
-            x: Coordenada x desejada.
-            y: Coordenada y desejada.
-
-        Returns:
-            A instância Cell correspondente às coordenadas.
-
-        Raises:
-            ValueError: Se não houver célula com as coordenadas fornecidas.
-        """
         for cell in self.maze:
             if x == cell.x and y == cell.y:
                 return cell
@@ -172,12 +114,6 @@ class MazeGenerator:
                          f" not found in the maze.")
 
     def pattern(self) -> None:
-        """Aplica um padrão inicial de células visitadas no centro do labirinto.
-
-        O padrão marca um conjunto predefinido de células como já visitadas
-        e as adiciona em pattern_cells. Caso o padrão conflite com a entrada
-        ou saída, é lançada uma ValueError.
-        """
         x = self.width // 2
         y = self.height // 2
 
@@ -200,12 +136,6 @@ class MazeGenerator:
             self.pattern_cells.append(cell)
 
     def get_neighboard(self, cell: Cell, neigboards: list[Cell]) -> None:
-        """Preenche neigboards com vizinhos não visitados da célula.
-
-        Args:
-            cell: Célula cuja vizinhança será verificada.
-            neigboards: Lista que será preenchida com células vizinhas não visitadas.
-        """
         if cell.x + 1 < self.width:
             cell_e = self.get_cell(cell.x + 1, cell.y)
             if not cell_e.visited:
@@ -224,16 +154,6 @@ class MazeGenerator:
                 neigboards.append(cell_n)
 
     def get_random_neighboard(self, neigboards: list[Cell]) -> Cell | None:
-        """Retorna um vizinho aleatório dentre os não visitados.
-
-        Filtra a lista de vizinhos recebida e escolhe um elemento aleatoriamente.
-
-        Args:
-            neigboards: Lista de células candidatas.
-
-        Returns:
-            Um objeto Cell escolhido aleatoriamente ou None se não houver candidatos.
-        """
         new_neighboard: list[Cell] = []
         for neighboard in neigboards:
             if not neighboard.visited:
@@ -241,15 +161,6 @@ class MazeGenerator:
         return random.choice(new_neighboard) if new_neighboard else None
 
     def remove_wall(self, cell: Cell, neighboard: Cell) -> None:
-        """Remove a parede entre duas células adjacentes.
-
-        Atualiza o estado das paredes das duas células de acordo com sua
-        posição relativa.
-
-        Args:
-            cell: Célula atual.
-            neighboard: Célula vizinha adjacente.
-        """
         if cell.x > neighboard.x:
             cell.west = False
             neighboard.east = False
@@ -264,11 +175,6 @@ class MazeGenerator:
             neighboard.north = False
 
     def dfs(self, cell: Cell) -> None:
-        """Gera caminhos recursivamente por busca em profundidade (DFS).
-
-        Marca células como visitadas, escolhe vizinhos aleatoriamente,
-        remove paredes entre células e recorre até esgotar as opções.
-        """
         cell.visited = True
         self.visited_cells.append(cell)
         while True:
@@ -286,23 +192,13 @@ class MazeGenerator:
         return
 
     def reset_visited(self) -> None:
-        """Restaura o estado 'visited' de todas as células para False.
-
-        Usado antes de executar algoritmos de busca (DFS/BFS) para garantir
-        que o estado de visita não influencie as rotinas de resolução.
-        """
         for cell in self.maze:
             cell.visited = False
 
     def get_neighboard_opened(self,
                               cell: Cell,
                               neigboards: list[Cell]) -> None:
-        """Preenche neigboards com vizinhos acessíveis (paredes abertas).
 
-        Args:
-            cell: Célula atual.
-            neigboards: Lista que será preenchida com vizinhos abertos e não visitados.
-        """
         if cell.x + 1 < self.width:
             cell_e = self.get_cell(cell.x + 1, cell.y)
             if not cell_e.visited and not cell.east and not cell_e.west:
@@ -321,19 +217,6 @@ class MazeGenerator:
                 neigboards.append(cell_n)
 
     def dfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> bool:
-        """Resolve o labirinto por DFS recursiva e registra o caminho.
-
-        Marca células visitadas, explora caminhos possíveis e preenche
-        visited_cells_resolution com a rota encontrada, retornando True
-        quando a saída é alcançada.
-
-        Args:
-            cell_entry: Célula de entrada para a busca.
-            cell_exit: Célula de saída desejada.
-
-        Returns:
-            True se a saída for encontrada, False caso contrário.
-        """
         cell_entry.visited = True
         if cell_entry.x == cell_exit.x and cell_entry.y == cell_exit.y:
             return True
@@ -349,16 +232,6 @@ class MazeGenerator:
         return False
 
     def bfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> None:
-        """Resolve o labirinto por BFS e constrói o caminho encontrado.
-
-        Executa busca em largura desde a entrada até a saída, preservando
-        um dicionário de pais para reconstruir o percurso final em
-        visited_cells_resolution.
-
-        Args:
-            cell_entry: Célula inicial da busca.
-            cell_exit: Célula alvo da busca.
-        """
         cell_entry.visited = True
         finish = Cell(-1, -1)
         queue = [cell_entry]
@@ -381,11 +254,6 @@ class MazeGenerator:
         self.visited_cells_resolution.reverse()
 
     def not_perfect_maze(self) -> None:
-        """Insere aberturas aleatórias para criar ciclos em labirintos não-perfeitos.
-
-        Percorre células e, de forma randômica, remove paredes entre células
-        evitando modificar células protegidas por pattern_cells.
-        """
         for i in range(self.width * self.height):
             if i % 5 == 0:
                 walls = ["north", "east", "south", "west"]
@@ -417,12 +285,6 @@ class MazeGenerator:
                             neighbor.east = False
 
     def generate(self) -> None:
-        """Gera o labirinto completo e resolve o caminho entre entrada e saída.
-
-        Executa as etapas de padrão inicial (quando aplicável), geração por
-        DFS, introdução de ciclos para labirintos não-perfeitos, limpeza do
-        estado visited e resolução por BFS para obter o caminho final.
-        """
         if self.width > 8 or self.height > 8:
             self.pattern()
         self.dfs(self.maze[0])
@@ -430,20 +292,10 @@ class MazeGenerator:
             self.not_perfect_maze()
         self.reset_visited()
         self.bfs_resolution(self.entry, self.exit)
+        output_maze(self)
 
 
 def get_hex(cell: Cell) -> str:
-    """Retorna um dígito hexadecimal representando as paredes da célula.
-
-    Cada bit codifica uma parede: norte=1, leste=2, sul=4, oeste=8. O valor
-    é retornado em notação hexadecimal maiúscula com um dígito.
-
-    Args:
-        cell: Célula cujo estado de paredes será codificado.
-
-    Returns:
-        Uma string com um dígito hexadecimal.
-    """
     value = 0
     if cell.north:
         value |= 1
@@ -458,19 +310,6 @@ def get_hex(cell: Cell) -> str:
 
 
 def get_direction(cell1: Cell, cell2: Cell) -> str:
-    """Determina a direção de cell1 para cell2 como 'N', 'S', 'E' ou 'W'.
-
-    Compara as coordenadas das células e retorna uma letra representando
-    a direção do primeiro para o segundo. Retorna string vazia se as
-    células forem equivalentes.
-
-    Args:
-        cell1: Célula de origem.
-        cell2: Célula de destino.
-
-    Returns:
-        Uma das letras 'N', 'S', 'E', 'W' ou '' se não houver deslocamento.
-    """
     if cell1.x > cell2.x:
         return "W"
     elif cell1.x < cell2.x:
@@ -483,14 +322,6 @@ def get_direction(cell1: Cell, cell2: Cell) -> str:
 
 
 def output_maze(maze: MazeGenerator) -> None:
-    """Serializa o labirinto e a solução em um arquivo de saída.
-
-    Escreve o mapa em linhas hexadecimais por célula, seguido das coordenadas
-    de entrada e saída e da sequência de direções que descreve a solução.
-
-    Args:
-        maze: Instância de MazeGenerator já gerada e resolvida.
-    """
     line = ""
     for y in range(maze.height):
         for x in range(maze.width):

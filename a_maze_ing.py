@@ -2,9 +2,22 @@ import sys
 import draw
 import state
 import hooks
+import map
 
 
 def graphics(mode: str = "normal") -> None:
+    '''Recebe o modo de operação (normal ou game) e inicializa a interface
+        gráfica usando a biblioteca MLX, configurando as janelas, imagens e hooks
+       necessários para renderizar o labirinto e interagir com o usuário.
+
+       Args:
+           mode: string que indica o modo de operação, pode ser "normal" para
+                 renderizar o labirinto gerado, ou "game" para iniciar o modo
+                 de jogo onde o usuário controla Teseu e Minotauro.
+                 
+       Retorno:
+           None, mas a função inicia a interface gráfica e entra no loop de eventos
+           da biblioteca MLX.'''
 
     sys.setrecursionlimit(300000)
 
@@ -28,7 +41,7 @@ def graphics(mode: str = "normal") -> None:
         (app.minotaur_image, app.minotaur_width,
          app.minotaur_height) = app.ptr.mlx_xpm_file_to_image(
                             app.mlx_ptr,
-                            "baixados.xpm")  # type: ignore
+                            "minotauro.xpm")  # type: ignore
         (app.teseu_image, app.teseu_width,
          app.teseu_height) = app.ptr.mlx_xpm_file_to_image(
                             app.mlx_ptr,
@@ -50,9 +63,10 @@ def graphics(mode: str = "normal") -> None:
         app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
         return
     app = state.MazeState()
+    map.output_maze(app.maze)
     app.initialize_mlx()
-    app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width + 500,
-                                     app.maze_pixel_height,
+    app.win = app.ptr.mlx_new_window(app.mlx_ptr, app.maze_pixel_width,
+                                     app.maze_pixel_height + 63,
                                      "Maze Generator")  # type: ignore
     draw.draw_rect(app, 0, 0,
                    app.maze_pixel_width, app.maze_pixel_height,
@@ -65,22 +79,11 @@ def graphics(mode: str = "normal") -> None:
         app.ptr.mlx_loop_hook(app.mlx_ptr, draw.loop_idle, None)  # type:ignore
     app.ptr.mlx_key_hook(app.win, hooks.key_hook, app)  # type: ignore
     app.ptr.mlx_expose_hook(app.win, app.expose_hook, None)  # type: ignore
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 300,
-                           0xAAAAAA, "Press ESC to quit")  # type: ignore
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 250, 895,
+                           0xAAAAAA, " G-gen S-solve R-regen C-color")  # type: ignore
     app.ptr.mlx_string_put(app.mlx_ptr, app.win,
-                           900, 260, 0xAAAAAA,
-                           "Press S to solve the maze")  # type: ignore
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 140, 0xAAAAAA,
-                           "Press R to reset the maze")  # type: ignore
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 160, 0xAAAAAA,
-                           "Press C to change the color")  # type: ignore
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win,
-                           900, 180, 0xAAAAAA,
-                           "Press P to hide/show"
-                           "resolution path")  # type: ignore
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 900, 280,
-                           0xAAAAAA, "Press SPACE to"
-                           "skip animations")  # type: ignore
+                            250, 915, 0xAAAAAA,
+                            " P-path SPACE-skip M-game ESC-quit")  # type: ignore
     app.ptr.mlx_loop_hook(app.mlx_ptr, draw.loop_idle, None)  # type: ignore
     app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
 

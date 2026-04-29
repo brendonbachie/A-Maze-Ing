@@ -1,9 +1,23 @@
+"""Implementação alternativa do gerador de labirintos usada no jogo.
+
+Contém a definição de Cell e MazeGenerator com métodos para gerar,
+modificar e resolver labirintos, além de utilitários de serialização.
+"""
+
 from validate_config import Configuration as cfg
 import random
 
 
 class Cell():
+    """Representa uma célula do labirinto com paredes e estado de visita."""
+
     def __init__(self, x: int, y: int) -> None:
+        """Inicializa uma célula nas coordenadas (x, y).
+
+        Args:
+            x: Coordenada horizontal.
+            y: Coordenada vertical.
+        """
         self.x = x
         self.y = y
         self.north = True
@@ -14,7 +28,19 @@ class Cell():
 
 
 class MazeGenerator():
+    """Gerador de labirintos baseado em configuração fornecida.
+
+    Inicializa a grade de células, posições especiais (Teseu, Minotauro,
+    entrada e saída) e fornece métodos para gerar e resolver o labirinto.
+    """
+
     def __init__(self, configuration: cfg):
+        """Configura o gerador a partir de um objeto Configuration.
+
+        Args:
+            configuration: Instância de validate_config.Configuration com os
+                parâmetros do labirinto.
+        """
         self.width = configuration.width
         self.height = configuration.height
         self.output_file = configuration.output_file
@@ -39,12 +65,28 @@ class MazeGenerator():
             random.seed(self.seed)
 
     def get_cell(self, x: int, y: int) -> Cell:
+        """Retorna a célula correspondente às coordenadas (x, y).
+
+        Se as coordenadas não existirem, retorna uma célula sentinela (-1, -1).
+
+        Args:
+            x: Coordenada x buscada.
+            y: Coordenada y buscada.
+
+        Returns:
+            A instância Cell correspondente ou Cell(-1, -1) se não encontrada.
+        """
         for cell in self.maze:
             if x == cell.x and y == cell.y:
                 return cell
         return Cell(-1, -1)
 
     def pattern(self) -> None:
+        """Aplica um padrão central ao labirinto marcando células como visitadas.
+
+        Se a entrada ou saída estiverem no caminho do padrão, encerra o programa
+        com um erro.
+        """
         try:
             x = self.width // 2
             y = self.height // 2
@@ -71,6 +113,12 @@ class MazeGenerator():
             exit(1)
 
     def get_neighboard(self, cell: Cell, neigboards: list[Cell]) -> None:
+        """Adiciona os vizinhos não visitados da célula atual à lista de vizinhos.
+
+        Args:
+            cell: Célula atual.
+            neigboards: Lista que será preenchida com os vizinhos não visitados.
+        """
         if cell.x + 1 < self.width:
             cell_e = self.get_cell(cell.x + 1, cell.y)
             if not cell_e.visited:
@@ -89,6 +137,14 @@ class MazeGenerator():
                 neigboards.append(cell_n)
 
     def get_random_neighboard(self, neigboards: list[Cell]) -> Cell | None:
+        """Retorna um vizinho aleatório dentre os não visitados.
+
+        Args:
+            neigboards: Lista de possíveis vizinhos.
+
+        Returns:
+            Um Cell escolhido aleatoriamente ou None se nenhum disponível.
+        """
         new_neighboard: list[Cell] = []
         for neighboard in neigboards:
             if not neighboard.visited:
@@ -96,6 +152,7 @@ class MazeGenerator():
         return random.choice(new_neighboard) if new_neighboard else None
 
     def remove_wall(self, cell: Cell, neighboard: Cell) -> None:
+        """Remove a parede entre duas células vizinhas atualizando ambos os lados."""
         if cell.x > neighboard.x:
             cell.west = False
             neighboard.east = False
@@ -110,6 +167,7 @@ class MazeGenerator():
             neighboard.north = False
 
     def dfs(self, cell: Cell) -> None:
+        """Realiza busca em profundidade (DFS) para gerar o labirinto."""
         cell.visited = True
         self.visited_cells.append(cell)
         while True:
@@ -127,12 +185,19 @@ class MazeGenerator():
         return
 
     def reset_visited(self) -> None:
+        """Reseta o estado de visita de todas as células do labirinto para False."""
         for cell in self.maze:
             cell.visited = False
 
     def get_neighboard_opened(self,
                               cell: Cell,
                               neigboards: list[Cell]) -> None:
+        """Adiciona os vizinhos abertos (sem paredes) da célula atual à lista.
+
+        Args:
+            cell: Célula atual.
+            neigboards: Lista que será preenchida com vizinhos abertos e não visitados.
+        """
 
         if cell.x + 1 < self.width:
             cell_e = self.get_cell(cell.x + 1, cell.y)
@@ -152,6 +217,8 @@ class MazeGenerator():
                 neigboards.append(cell_n)
 
     def dfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> bool:
+        """Resolve o labirinto por DFS recursiva e registra o caminho."""
+
         cell_entry.visited = True
         if cell_entry.x == cell_exit.x and cell_entry.y == cell_exit.y:
             return True
@@ -167,6 +234,7 @@ class MazeGenerator():
         return False
 
     def bfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> None:
+        """Realiza busca em largura (BFS) para resolver o labirinto e reconstruir o caminho."""
         cell_entry.visited = True
         finish = Cell(-1, -1)
         queue = [cell_entry]
@@ -189,37 +257,56 @@ class MazeGenerator():
         self.visited_cells_resolution.reverse()
 
     def not_perfect_maze(self) -> None:
+        """Introduz aberturas aleatórias para criar ciclos em labirintos não-perfeitos."""
         for i in range(self.width * self.height):
-            if i % 5 == 0:
+            if i % 1 == 0:
                 walls = ["north", "east", "south", "west"]
                 cell = random.choice(self.maze)
                 wall = random.choice(walls)
                 if cell not in self.pattern_cells:
                     if wall == "north" and cell.north and not cell.y == 0:
-                        cell.north = False
                         neighbor = self.get_cell(cell.x, cell.y - 1)
                         if neighbor and neighbor not in self.pattern_cells:
+                            cell.north = False
                             neighbor.south = False
+                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                            cell.north = True
+                            if neighbor:
+                                neighbor.south = True
+
                     # ver se essa quebra de east e south ta funcionando
                     elif wall == "east" and cell.east and not (
                                         cell.x == self.width - 1):
-                        cell.east = False
                         neighbor = self.get_cell(cell.x + 1, cell.y)
                         if neighbor and neighbor not in self.pattern_cells:
+                            cell.east = False
                             neighbor.west = False
+                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                            cell.east = True
+                            if neighbor:
+                                neighbor.west = True
                     elif wall == "south" and cell.south and not (
                                         cell.y == self.height - 1):
-                        cell.south = False
                         neighbor = self.get_cell(cell.x, cell.y + 1)
                         if neighbor and neighbor not in self.pattern_cells:
+                            cell.south = False
                             neighbor.north = False
+                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                            cell.south = True
+                            if neighbor:
+                                neighbor.north = True
                     elif wall == "west" and cell.west and not cell.x == 0:
-                        cell.west = False
                         neighbor = self.get_cell(cell.x - 1, cell.y)
                         if neighbor and neighbor not in self.pattern_cells:
+                            cell.west = False
                             neighbor.east = False
+                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                            cell.west = True
+                            if neighbor:
+                                neighbor.east = True
 
     def bfs_game(self, start: Cell, goal: Cell) -> list[Cell]:
+        """Encontra o caminho entre duas células usando BFS retornando a lista de células do caminho."""
         visited = {(start.x, start.y)}
         finish = (-1, -1)
         queue = [start]
@@ -245,6 +332,11 @@ class MazeGenerator():
         return path
 
     def generate(self, solve: bool) -> None:
+        """Gera o labirinto e, opcionalmente, resolve-o.
+
+        Args:
+            solve: Se True, executa a resolução após gerar o labirinto.
+        """
         if self.width < 8 or self.height < 8:
             print("The maze is too small to apply the pattern, skipping it...")
         else:
@@ -258,6 +350,7 @@ class MazeGenerator():
 
 
 def get_hex(cell: Cell) -> str:
+    """Retorna a representação hexadecimal da célula no labirinto com base nas paredes."""
     value = 0
     if cell.north:
         value |= 1
@@ -272,6 +365,7 @@ def get_hex(cell: Cell) -> str:
 
 
 def get_direction(cell1: Cell, cell2: Cell) -> str:
+    """Retorna a direção entre duas células como 'N', 'S', 'E' ou 'W'."""
     if cell1.x > cell2.x:
         return "W"
     elif cell1.x < cell2.x:
@@ -284,6 +378,7 @@ def get_direction(cell1: Cell, cell2: Cell) -> str:
 
 
 def output_maze(maze: MazeGenerator) -> None:
+    """Escreve a representação do labirinto em um arquivo de saída."""
     line = ""
     for y in range(maze.height):
         for x in range(maze.width):
