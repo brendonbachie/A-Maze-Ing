@@ -337,8 +337,9 @@ def game_start(app: MazeState) -> None:
             return
         draw.draw_minotaur(app, cell)
 
+        check = (app.crete_maze.teseu_idx % 2 == 0 and cell1 == app.teseu_cell)
         app.minotaur_cell = cell1
-        if cell == app.teseu_cell:
+        if check or cell1 == app.teseu_cell:
             print("\nTeseu reached the Minotaur!!!\n"
                   "Use directional buttons for move.\n"
                   "Find the exit or press 'A' for Ariadne's help\n")
