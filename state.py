@@ -10,7 +10,7 @@ import game
 from validate_config import Configuration as cfg
 from map import Cell, MazeGenerator
 from enum import Enum
-import mlx  # type: ignore
+import mlx
 
 
 class State(Enum):
@@ -36,7 +36,8 @@ class MazeState():
     """
 
     def __init__(self) -> None:
-        """Inicializa o estado do aplicativo lendo a configuração e gerando o labirinto.
+        """Inicializa o estado do aplicativo lendo a configuração e gerando o
+        labirinto.
 
         O construtor cria instâncias necessárias, gera o labirinto e prepara
         recursos iniciais para renderização e jogo.
@@ -88,7 +89,8 @@ class MazeState():
         self.ariadne: bool = False
 
     def initialize_mlx(self) -> None:
-        """Inicializa a janela e os recursos gráficos necessários para renderizar o labirinto.
+        """Inicializa a janela e os recursos gráficos necessários para
+        renderizar o labirinto.
 
         Calcula as dimensões de estrutura, cria a imagem e obtém o buffer
         de dados para desenho.
@@ -118,7 +120,8 @@ class MazeState():
 
 
 def structure_dimensions(config: cfg) -> tuple[int, int, int]:
-    """Calcula as dimensões internas (margem, parede, célula) para renderização.
+    """Calcula as dimensões internas (margem, parede, célula) para
+    renderização.
 
     Retorna uma tupla com (margem_size, wall_size, cell_size) baseada nos
     parâmetros de configuração do labirinto.
@@ -132,7 +135,8 @@ def structure_dimensions(config: cfg) -> tuple[int, int, int]:
 
 
 def total_pixel_dimensions(config: cfg, mlx: MazeState) -> tuple[int, int]:
-    """Calcula as dimensões totais em pixels necessárias para renderizar o labirinto.
+    """Calcula as dimensões totais em pixels necessárias para renderizar o
+    labirinto.
 
     Retorna (maze_pixel_width, maze_pixel_height) considerando paredes,
     margens e células.

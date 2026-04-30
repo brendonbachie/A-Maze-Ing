@@ -1,4 +1,3 @@
-REQUIREMENTS = requirements.txt
 PYTHON = python3
 
 MYPY_FLAGS = --warn-return-any \
@@ -7,11 +6,8 @@ MYPY_FLAGS = --warn-return-any \
 			 --disallow-untyped-defs \
 			 --check-untyped-defs
 
-install:
-	pip install -r $(REQUIREMENTS)
-
 run:
-	$(PYTHON) a_maze_ing.py
+	$(PYTHON) a_maze_ing.py config.txt
 
 debug:
 	$(PYTHON) -m pdb a_maze_ing.py

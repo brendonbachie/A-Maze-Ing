@@ -1,18 +1,3 @@
-"""Validação e leitura da configuração do labirinto.
-
-Lê o arquivo de configuração, interpreta chaves e valores, valida limites
-e retorna um objeto Configuration usado para inicializar o jogo.
-"""
-
-# WIDTH=20
-# HEIGHT=15
-# ENTRY=0,0
-# EXIT=19,14
-# OUTPUT_FILE=maze.txt
-# PERFECT=True
-
-# Criei uma classe Configuration para armazenar as configurações do labirinto
-
 class Configuration():
     """Armazena configurações do labirinto lidas do arquivo.
 
@@ -21,22 +6,17 @@ class Configuration():
     """
     def __init__(self) -> None:
         """Inicializa valores padrão para a configuração."""
-        # verificar se os valores são negativos (width e height)
         self.width = -1
         self.height = -1
-        # verificar se os valores são negativos ou se estão fora dos limites
-        # do labirinto (entry e exit)
         self.entry = (-1, -1)
         self.exit = (-1, -1)
-        # verificar se o valor é um caminho válido e se a extensão é .txt
-        # (output_file)
         self.output_file = ""
-        # verificar se o valor é 'true' ou 'false' (perfect)
         self.perfect = True
         self.seed: int | None = None
         self.teseu: tuple[int, int] = (-1, -1)
         self.minotaur: tuple[int, int] = (-1, -1)
-        self.gamemode = True
+        self.gamemode = False
+        self.args: list[str] = []
 
 
 # A parse_coordinates é necessária pra converter os valores do entry e exit
@@ -187,7 +167,8 @@ def validate_config(config: dict[str, str]) -> Configuration:
 # chamar as funções de parser e validação, e retornar o objeto Configuration
 # com os valores validados.
 def read_config_file() -> Configuration:
-    """Lê o arquivo config.txt, faz parsing e validação, e retorna Configuration.
+    """Lê o arquivo config.txt, faz parsing e validação, e retorna
+        Configuration.
 
     Em caso de erro, imprime a mensagem e encerra o programa.
 
@@ -197,7 +178,7 @@ def read_config_file() -> Configuration:
     conf_dict = {}
     conf = None
     try:
-        with open("config.txt") as file:
+        with open(Configuration.args[0]) as file:
             conf_file = file.read()
         conf_dict = parser_config(conf_file)
         conf = validate_config(conf_dict)
@@ -205,13 +186,3 @@ def read_config_file() -> Configuration:
         print(f"Error: {e}")
         exit(1)
     return conf
-
-
-if __name__ == "__main__":
-    config = read_config_file()
-    print(f"Width: {config.width}")
-    print(f"Height: {config.height}")
-    print(f"Entry: {config.entry}")
-    print(f"Exit: {config.exit}")
-    print(f"Output File: {config.output_file}")
-    print(f"Perfect: {config.perfect}")

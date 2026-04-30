@@ -1,10 +1,3 @@
-"""Callbacks e manipuladores de eventos (hooks) do jogo.
-
-Este módulo contém funções que gerenciam a geração, solução, interação por
-teclado e fluxo do modo de jogo (Teseu vs Minotauro). Cada função é usada
-como hook no loop gráfico para animar ou controlar o estado do jogo.
-"""
-
 import draw
 import time
 import random
@@ -399,23 +392,23 @@ def move_teseu(app: MazeState, direction: str) -> None:
     if direction == "up":
         next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x,
                                                  app.teseu_cell.y - 1)
-        if next_cell == (-1, -1) or next_cell.south:
+        if next_cell.x == -1 and next_cell.y == -1 or next_cell.south:
             return
 
     elif direction == "down":
         next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x,
                                                  app.teseu_cell.y + 1)
-        if next_cell == (-1, -1) or next_cell.north:
+        if next_cell.x == -1 and next_cell.y == -1 or next_cell.north:
             return
     elif direction == "left":
         next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x - 1,
                                                  app.teseu_cell.y)
-        if next_cell == (-1, -1) or next_cell.east:
+        if next_cell.x == -1 and next_cell.y == -1 or next_cell.east:
             return
     elif direction == "right":
         next_cell = app.crete_maze.maze.get_cell(app.teseu_cell.x + 1,
                                                  app.teseu_cell.y)
-        if next_cell == (-1, -1) or next_cell.west:
+        if next_cell.x == -1 and next_cell.y == -1 or next_cell.west:
             return
     else:
         return

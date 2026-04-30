@@ -1,7 +1,7 @@
-"""Implementação alternativa do gerador de labirintos usada no jogo.
+"""Gerador de labirintos usado pela aplicação principal.
 
-Contém a definição de Cell e MazeGenerator com métodos para gerar,
-modificar e resolver labirintos, além de utilitários de serialização.
+Define Cell e MazeGenerator com métodos para gerar, modificar e resolver
+labirintos, além de utilitários para serialização e obtenção de direção.
 """
 
 from validate_config import Configuration as cfg
@@ -82,10 +82,11 @@ class MazeGenerator():
         return Cell(-1, -1)
 
     def pattern(self) -> None:
-        """Aplica um padrão central ao labirinto marcando células como visitadas.
+        """Aplica um padrão central ao labirinto marcando células como
+        visitadas.
 
-        Se a entrada ou saída estiverem no caminho do padrão, encerra o programa
-        com um erro.
+        Se a entrada ou saída estiverem no caminho do padrão, encerra o
+        programa com um erro.
         """
         try:
             x = self.width // 2
@@ -113,11 +114,13 @@ class MazeGenerator():
             exit(1)
 
     def get_neighboard(self, cell: Cell, neigboards: list[Cell]) -> None:
-        """Adiciona os vizinhos não visitados da célula atual à lista de vizinhos.
+        """Adiciona os vizinhos não visitados da célula atual à lista de
+        vizinhos.
 
         Args:
             cell: Célula atual.
-            neigboards: Lista que será preenchida com os vizinhos não visitados.
+            neigboards: Lista que será preenchida com os
+            vizinhos não visitados.
         """
         if cell.x + 1 < self.width:
             cell_e = self.get_cell(cell.x + 1, cell.y)
@@ -152,7 +155,8 @@ class MazeGenerator():
         return random.choice(new_neighboard) if new_neighboard else None
 
     def remove_wall(self, cell: Cell, neighboard: Cell) -> None:
-        """Remove a parede entre duas células vizinhas atualizando ambos os lados."""
+        """Remove a parede entre duas células vizinhas
+        atualizando ambos os lados."""
         if cell.x > neighboard.x:
             cell.west = False
             neighboard.east = False
@@ -185,7 +189,8 @@ class MazeGenerator():
         return
 
     def reset_visited(self) -> None:
-        """Reseta o estado de visita de todas as células do labirinto para False."""
+        """Reseta o estado de visita de todas as células do labirinto para
+        False."""
         for cell in self.maze:
             cell.visited = False
 
@@ -196,7 +201,8 @@ class MazeGenerator():
 
         Args:
             cell: Célula atual.
-            neigboards: Lista que será preenchida com vizinhos abertos e não visitados.
+            neigboards: Lista que será preenchida com vizinhos
+            abertos e não visitados.
         """
 
         if cell.x + 1 < self.width:
@@ -234,7 +240,8 @@ class MazeGenerator():
         return False
 
     def bfs_resolution(self, cell_entry: Cell, cell_exit: Cell) -> None:
-        """Realiza busca em largura (BFS) para resolver o labirinto e reconstruir o caminho."""
+        """Realiza busca em largura (BFS) para resolver o labirinto
+        e reconstruir o caminho."""
         cell_entry.visited = True
         finish = Cell(-1, -1)
         queue = [cell_entry]
@@ -257,7 +264,8 @@ class MazeGenerator():
         self.visited_cells_resolution.reverse()
 
     def not_perfect_maze(self) -> None:
-        """Introduz aberturas aleatórias para criar ciclos em labirintos não-perfeitos."""
+        """Introduz aberturas aleatórias para criar ciclos em
+        labirintos não-perfeitos."""
         for i in range(self.width * self.height):
             if i % 1 == 0:
                 walls = ["north", "east", "south", "west"]
@@ -306,7 +314,8 @@ class MazeGenerator():
                                 neighbor.east = True
 
     def bfs_game(self, start: Cell, goal: Cell) -> list[Cell]:
-        """Encontra o caminho entre duas células usando BFS retornando a lista de células do caminho."""
+        """Encontra o caminho entre duas células usando BFS
+        retornando a lista de células do caminho."""
         visited = {(start.x, start.y)}
         finish = (-1, -1)
         queue = [start]
@@ -350,7 +359,8 @@ class MazeGenerator():
 
 
 def get_hex(cell: Cell) -> str:
-    """Retorna a representação hexadecimal da célula no labirinto com base nas paredes."""
+    """Retorna a representação hexadecimal da célula no
+    labirinto com base nas paredes."""
     value = 0
     if cell.north:
         value |= 1

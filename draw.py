@@ -1,10 +1,3 @@
-"""Funções de desenho para o jogo do labirinto.
-
-Este módulo contém utilitários para desenhar pixels, células, conexões
-e elementos do jogo (Teseu, Minotauro, caminhos e o labirinto) usando a
-representação interna de MazeState e Cell.
-"""
-
 from map import Cell
 from state import MazeState
 
@@ -191,7 +184,6 @@ def draw_maze_cell(app: MazeState, cell: Cell, color: int) -> None:
         draw_rect(app, cx, cy + app.cell_size, app.cell_size,
                   app.wall_size, color)
 
-
     if not cell.east:
         draw_rect(app, cx + app.cell_size, cy, app.wall_size,
                   app.cell_size, color)
@@ -288,6 +280,7 @@ def draw_full_maze_game(app: MazeState, color: int) -> None:
 def loop_idle(_: None) -> None:
     """Mantém o loop de eventos do jogo ativo sem fazer nada.
 
-    Função utilizada como callback para quando o loop não tem eventos a processar.
+    Função utilizada como callback para quando o loop não tem
+    eventos a processar.
     """
     pass

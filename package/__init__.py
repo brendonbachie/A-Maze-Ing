@@ -1,3 +1,7 @@
-import mazegen
+from .mazegen import MazeGenerator, Cell, get_hex, get_direction, output_maze
 
-__all__ = ["mazegen.MazeGenerator", "mazegen.Cell", "mazegen.get_hex", "mazegen.get_direction", "mazegen.output_maze"]
+__all__ = ["MazeGenerator",
+           "Cell",
+           "get_hex",
+           "get_direction",
+           "output_maze"]

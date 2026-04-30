@@ -3,21 +3,22 @@ import draw
 import state
 import hooks
 import map
+import validate_config
 
 
 def graphics(mode: str = "normal") -> None:
     '''Recebe o modo de operação (normal ou game) e inicializa a interface
-        gráfica usando a biblioteca MLX, configurando as janelas, imagens e hooks
-       necessários para renderizar o labirinto e interagir com o usuário.
+        gráfica usando a biblioteca MLX, configurando as janelas, imagens e
+        hooks necessários para renderizar o labirinto e interagir com o
+        usuário.
 
        Args:
            mode: string que indica o modo de operação, pode ser "normal" para
                  renderizar o labirinto gerado, ou "game" para iniciar o modo
                  de jogo onde o usuário controla Teseu e Minotauro.
-                 
        Retorno:
-           None, mas a função inicia a interface gráfica e entra no loop de eventos
-           da biblioteca MLX.'''
+           None, mas a função inicia a interface gráfica e entra no
+           loop de eventos da biblioteca MLX.'''
 
     sys.setrecursionlimit(300000)
 
@@ -79,11 +80,13 @@ def graphics(mode: str = "normal") -> None:
         app.ptr.mlx_loop_hook(app.mlx_ptr, draw.loop_idle, None)  # type:ignore
     app.ptr.mlx_key_hook(app.win, hooks.key_hook, app)  # type: ignore
     app.ptr.mlx_expose_hook(app.win, app.expose_hook, None)  # type: ignore
-    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 250, 895,
-                           0xAAAAAA, " G-gen S-solve R-regen C-color")  # type: ignore
+    app.ptr.mlx_string_put(app.mlx_ptr, app.win, 250,
+                           895, 0xAAAAAA,
+                           " G-gen S-solve R-regen C-color")  # type: ignore
     app.ptr.mlx_string_put(app.mlx_ptr, app.win,
-                            250, 915, 0xAAAAAA,
-                            " P-path SPACE-skip M-game ESC-quit")  # type: ignore
+                           250, 915, 0xAAAAAA,
+                           " P-path SPACE-skip M-game ESC-quit"
+                           )  # type: ignore
     app.ptr.mlx_loop_hook(app.mlx_ptr, draw.loop_idle, None)  # type: ignore
     app.ptr.mlx_loop(app.mlx_ptr)  # type: ignore
 
@@ -92,4 +95,10 @@ def graphics(mode: str = "normal") -> None:
 
 
 if __name__ == "__main__":
+    args = sys.argv[1:]
+    if len(args) == 1 and args[0].endswith(".txt"):
+        validate_config.Configuration.args = args
+    else:
+        print("Usage: python3 a_maze_ing.py [config_file]")
+        exit(1)
     graphics()

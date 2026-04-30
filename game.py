@@ -43,7 +43,8 @@ class GameState:
         caminhos iniciais (BFS) para Teseu e Minotauro.
 
         Args:
-            configs: Objeto Configuration com os valores de configuração do labirinto.
+            configs: Objeto Configuration com os valores de
+            configuração do labirinto.
 
         Returns:
             Uma instância de GameState com o estado inicial do jogo.
