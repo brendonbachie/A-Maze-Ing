@@ -414,6 +414,7 @@ class MazeGenerator:
             self.not_perfect_maze()
         self.reset_visited()
         self.bfs_resolution(self.entry, self.exit)
+        output_maze(self)
 
 
 def get_hex(cell: Cell) -> str:

@@ -33,8 +33,11 @@ def parse_coordinates(value: str, width: int, height: int) -> tuple[int, int]:
     Returns:
         Tupla (x, y) com valores inteiros.
     """
-    x_str, y_str = value.split(",")
-    x, y = int(x_str.strip()), int(y_str.strip())
+    try:
+        x_str, y_str = value.split(",")
+        x, y = int(x_str.strip()), int(y_str.strip())
+    except ValueError:
+        raise ValueError(f"Invalid coordinates: {value}")
     return (x, y)
 
 
@@ -52,14 +55,20 @@ def parser_config(conf_file: str) -> dict[str, str]:
     Returns:
         Dicionário mapeando chaves para valores como strings.
     """
-    confs = {}
-    for line in conf_file.splitlines():
-        if line.strip() and not line.startswith("#"):
-            key, value = line.split("=", 1)
-            if key.strip() in confs:
-                raise ValueError(f"Duplicate configuration key: {key.strip()}")
-            confs[key.strip()] = value.strip()
-    return confs
+    try:
+        confs = {}
+        for line in conf_file.splitlines():
+            if line.strip() and not line.startswith("#"):
+                key, value = line.split("=", 1)
+                if key.strip() in confs:
+                    raise ValueError(
+                        f"Duplicate configuration key: {key.strip()}"
+                    )
+                confs[key.strip()] = value.strip()
+        return confs
+    except Exception as e:
+        print(f"Error parsing config file: {e}")
+        return {}
 
 
 # a validate_config é necessária pra validar os valores do dicionário de

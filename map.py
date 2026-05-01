@@ -104,9 +104,10 @@ class MazeGenerator():
                 ]
             for coord in coords:
                 cell = self.get_cell(coord[1], coord[0])
-                if cell == self.entry or cell == self.exit:
-                    raise ValueError("The pattern cannot be applied because"
-                                     "the entry or exit is in the way.")
+                if cell in (self.entry, self.exit, self.teseu, self.minotaur):
+                    raise ValueError("The pattern cannot be applied because "
+                                     "the entry, exit, teseu or minotaur is in"
+                                     " the way.")
                 cell.visited = True
                 self.pattern_cells.append(cell)
         except ValueError as e:
@@ -282,7 +283,6 @@ class MazeGenerator():
                             if neighbor:
                                 neighbor.south = True
 
-                    # ver se essa quebra de east e south ta funcionando
                     elif wall == "east" and cell.east and not (
                                         cell.x == self.width - 1):
                         neighbor = self.get_cell(cell.x + 1, cell.y)
@@ -346,7 +346,7 @@ class MazeGenerator():
         Args:
             solve: Se True, executa a resolução após gerar o labirinto.
         """
-        if self.width < 8 or self.height < 8:
+        if self.width < 9 or self.height < 9:
             print("The maze is too small to apply the pattern, skipping it...")
         else:
             self.pattern()

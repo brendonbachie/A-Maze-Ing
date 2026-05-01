@@ -99,6 +99,6 @@ if __name__ == "__main__":
     if len(args) == 1 and args[0].endswith(".txt"):
         validate_config.Configuration.args = args
     else:
-        print("Usage: python3 a_maze_ing.py [config_file]")
+        print("Usage: python3 a_maze_ing.py [config_file].txt")
         exit(1)
     graphics()
