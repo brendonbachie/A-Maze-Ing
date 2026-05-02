@@ -50,11 +50,8 @@ class GameState:
             Uma instância de GameState com o estado inicial do jogo.
         """
         crete = GameState(configs)
-        # coloca o teseu na posição de entrada do labirinto
         crete.teseu_pos = crete.maze.teseu
-        # coloca o minotaur em uma posição aleatória do labirinto
         crete.minotaur_pos = crete.maze.minotaur
-        # coloca a saída do labirinto
         crete.exit_pos = crete.maze.get_cell(configs.exit[0], configs.exit[1])
         crete.teseu_path = crete.maze.bfs_game(crete.teseu_pos,
                                                crete.minotaur_pos)

@@ -267,3 +267,23 @@ O Claude (Anthropic) foi utilizado ao longo do projeto como assistente de desenv
 ## Recursos
 
 Foi utilizado o guia feito pelos cadetes Lunna e Thalles. Foi utilizado tutorial para o DFS e BFS (https://medium.com/@anwarhermuche/m%C3%A9todos-de-busca-em-grafos-bfs-dfs-cf17761a0dd9) e Os recursos de IA Claude e ChatGPT para auxílio de entendimento dos algoritmos e da refatoração.
+
+### Módulo Reutilizável:
+
+Dentro do módulo `mazegen`, a classe `MazeGenerator` é a peça central. Ela encapsula toda a lógica de geração e resolução do labirinto, permitindo que seja facilmente reutilizada em outros projetos sem dependências externas. A classe é projetada para ser flexível, aceitando parâmetros de configuração diretamente no construtor, o que facilita a criação de labirintos personalizados.
+
+Exemplo de uso do `MazeGenerator`:
+
+```python
+import mazegen
+
+mg = mazegen.MazeGenerator(
+    width=20,
+    height=15,
+    output_file="maze.txt",
+    perfect=True,
+    entry=(0, 0),
+    exit=(19, 14),
+    seed=42
+)
+mg.generate()  # Gera e resolve o labirinto

@@ -367,7 +367,7 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.north = False
                             neighbor.south = False
-                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
                             cell.north = True
                             if neighbor:
                                 neighbor.south = True
@@ -377,7 +377,7 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.east = False
                             neighbor.west = False
-                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
                             cell.east = True
                             if neighbor:
                                 neighbor.west = True
@@ -387,7 +387,7 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.south = False
                             neighbor.north = False
-                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
                             cell.south = True
                             if neighbor:
                                 neighbor.north = True
@@ -396,7 +396,7 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.west = False
                             neighbor.east = False
-                        if get_hex(cell) == "0" or get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
                             cell.west = True
                             if neighbor:
                                 neighbor.east = True
@@ -414,63 +414,63 @@ class MazeGenerator:
             self.not_perfect_maze()
         self.reset_visited()
         self.bfs_resolution(self.entry, self.exit)
-        output_maze(self)
+        self.output_maze(self)
 
 
-def get_hex(cell: Cell) -> str:
-    """Retorna um dígito hexadecimal representando as paredes da célula.
+    def get_hex(self, cell: Cell) -> str:
+        """Retorna um dígito hexadecimal representando as paredes da célula.
 
-    Bits: norte=1, leste=2, sul=4, oeste=8.
-    """
-    value = 0
-    if cell.north:
-        value |= 1
-    if cell.east:
-        value |= 2
-    if cell.south:
-        value |= 4
-    if cell.west:
-        value |= 8
+        Bits: norte=1, leste=2, sul=4, oeste=8.
+        """
+        value = 0
+        if cell.north:
+            value |= 1
+        if cell.east:
+            value |= 2
+        if cell.south:
+            value |= 4
+        if cell.west:
+            value |= 8
 
-    return format(value, "X")
-
-
-def get_direction(cell1: Cell, cell2: Cell) -> str:
-    """Determina a direção de cell1 para cell2 como 'N', 'S', 'E' ou 'W'.
-
-    Retorna string vazia se as células forem iguais.
-    """
-    if cell1.x > cell2.x:
-        return "W"
-    elif cell1.x < cell2.x:
-        return "E"
-    elif cell1.y > cell2.y:
-        return "N"
-    elif cell1.y < cell2.y:
-        return "S"
-    return ""
+        return format(value, "X")
 
 
-def output_maze(maze: MazeGenerator) -> None:
-    """Serializa o labirinto e a solução em um arquivo de saída.
+    def get_direction(self, cell1: Cell, cell2: Cell) -> str:
+        """Determina a direção de cell1 para cell2 como 'N', 'S', 'E' ou 'W'.
 
-    Escreve linhas hex por célula, seguido por entry/exit e a sequência
-    de direções que descreve a solução.
-    """
-    line = ""
-    for y in range(maze.height):
-        for x in range(maze.width):
-            cell = maze.get_cell(x, y)
-            line += get_hex(cell)
+        Retorna string vazia se as células forem iguais.
+        """
+        if cell1.x > cell2.x:
+            return "W"
+        elif cell1.x < cell2.x:
+            return "E"
+        elif cell1.y > cell2.y:
+            return "N"
+        elif cell1.y < cell2.y:
+            return "S"
+        return ""
+
+
+    def output_maze(self) -> None:
+        """Serializa o labirinto e a solução em um arquivo de saída.
+
+        Escreve linhas hex por célula, seguido por entry/exit e a sequência
+        de direções que descreve a solução.
+        """
+        line = ""
+        for y in range(self.height):
+            for x in range(self.width):
+                cell = self.get_cell(x, y)
+                line += self.get_hex(cell)
+            line += "\n"
         line += "\n"
-    line += "\n"
-    line += f"{maze.entry.x}, {maze.entry.y}"
-    line += "\n"
-    line += f"{maze.exit.x}, {maze.exit.y}"
-    line += "\n"
-    visited_cells = maze.visited_cells_resolution
-    for i in range(len(visited_cells) - 1):
-        line += get_direction(visited_cells[i], visited_cells[i + 1])
-    namefile = maze.output_file
-    with open(namefile, "w") as f:
-        f.write(line)
+        line += f"{self.entry.x}, {self.entry.y}"
+        line += "\n"
+        line += f"{self.exit.x}, {self.exit.y}"
+        line += "\n"
+        visited_cells = self.visited_cells_resolution
+        for i in range(len(visited_cells) - 1):
+            line += self.get_direction(visited_cells[i], visited_cells[i + 1])
+        namefile = self.output_file
+        with open(namefile, "w") as f:
+            f.write(line)
