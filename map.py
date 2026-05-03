@@ -181,7 +181,6 @@ class MazeGenerator():
             if not neighbors:
                 return
             neighbor = random.choice(neighbors)
-            # neighbor = self.get_random_neighboard(neighbors)
             if not neighbor:
                 break
             self.remove_wall(cell, neighbor)
