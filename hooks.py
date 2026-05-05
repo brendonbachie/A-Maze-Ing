@@ -504,6 +504,7 @@ def key_game_hook(keycode: int, app: MazeState) -> None:
             draw.draw_full_maze_game(app, app.maze_color)
             app.ariadne = False
 
+
 def update(app: MazeState) -> None:
     if app.state == State.GENERATE:
         generate(app)
@@ -511,4 +512,3 @@ def update(app: MazeState) -> None:
         solve(app)
     elif app.state == State.TESEU:
         game_start(app)
-    

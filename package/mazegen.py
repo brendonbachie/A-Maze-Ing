@@ -367,7 +367,8 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.north = False
                             neighbor.south = False
-                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(
+                           neighbor) == "0":
                             cell.north = True
                             if neighbor:
                                 neighbor.south = True
@@ -377,7 +378,8 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.east = False
                             neighbor.west = False
-                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(
+                           neighbor) == "0":
                             cell.east = True
                             if neighbor:
                                 neighbor.west = True
@@ -387,7 +389,8 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.south = False
                             neighbor.north = False
-                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(
+                           neighbor) == "0":
                             cell.south = True
                             if neighbor:
                                 neighbor.north = True
@@ -396,7 +399,8 @@ class MazeGenerator:
                         if neighbor and neighbor not in self.pattern_cells:
                             cell.west = False
                             neighbor.east = False
-                        if self.get_hex(cell) == "0" or self.get_hex(neighbor) == "0":
+                        if self.get_hex(cell) == "0" or self.get_hex(
+                           neighbor) == "0":
                             cell.west = True
                             if neighbor:
                                 neighbor.east = True
@@ -414,8 +418,7 @@ class MazeGenerator:
             self.not_perfect_maze()
         self.reset_visited()
         self.bfs_resolution(self.entry, self.exit)
-        self.output_maze(self)
-
+        self.output_maze()
 
     def get_hex(self, cell: Cell) -> str:
         """Retorna um dígito hexadecimal representando as paredes da célula.
@@ -434,7 +437,6 @@ class MazeGenerator:
 
         return format(value, "X")
 
-
     def get_direction(self, cell1: Cell, cell2: Cell) -> str:
         """Determina a direção de cell1 para cell2 como 'N', 'S', 'E' ou 'W'.
 
@@ -449,7 +451,6 @@ class MazeGenerator:
         elif cell1.y < cell2.y:
             return "S"
         return ""
-
 
     def output_maze(self) -> None:
         """Serializa o labirinto e a solução em um arquivo de saída.
