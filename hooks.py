@@ -244,7 +244,6 @@ def key_hook(keycode: int, app: MazeState) -> None:
         if not app.is_generate:
             print("You need to generate a maze before changing the color.")
             return
-        print("Changing the color...")
         change_color(app)
     if keycode == 112:  # P
         if not app.is_generate:
@@ -503,12 +502,3 @@ def key_game_hook(keycode: int, app: MazeState) -> None:
                 draw.draw_cell(app, cell, app.pattern_color)
             draw.draw_full_maze_game(app, app.maze_color)
             app.ariadne = False
-
-
-def update(app: MazeState) -> None:
-    if app.state == State.GENERATE:
-        generate(app)
-    elif app.state == State.RESOLUTION:
-        solve(app)
-    elif app.state == State.TESEU:
-        game_start(app)

@@ -19,9 +19,6 @@ class Configuration():
         self.args: list[str] = []
 
 
-# A parse_coordinates é necessária pra converter os valores do entry e exit
-# pra tupla de ints, e validar que estão no formato correto. Se não tiver,
-# vai dar erro
 def parse_coordinates(value: str, width: int, height: int) -> tuple[int, int]:
     """Converte uma string "x,y" em uma tupla de inteiros (x, y).
 
@@ -116,17 +113,24 @@ def validate_config(config: dict[str, str]) -> Configuration:
                                                        configuration.width,
                                                        configuration.height)
                 configs_required.remove("EXIT")
+            elif key == "GAMEMODE":
+                if value.lower() not in ["true", "false"]:
+                    raise ValueError("GAMEMODE must be 'True' or 'False'")
+                configuration.gamemode = value.lower() == "true"
             elif key == "TESEU":
-                configuration.teseu = parse_coordinates(
-                                                        value,
-                                                        configuration.width,
-                                                        configuration.height
-                                                        )
+                coords = parse_coordinates(
+                    value,
+                    configuration.width,
+                    configuration.height
+                )
+                configuration.teseu = coords
             elif key == "MINOTAUR":
-                configuration.minotaur = parse_coordinates(value,
-                                                           configuration.width,
-                                                           configuration.height
-                                                           )
+                coords = parse_coordinates(
+                    value,
+                    configuration.width,
+                    configuration.height
+                )
+                configuration.minotaur = coords
             elif key == "OUTPUT_FILE" and value.endswith(".txt"):
                 configuration.output_file = value
                 configs_required.remove("OUTPUT_FILE")
@@ -135,10 +139,6 @@ def validate_config(config: dict[str, str]) -> Configuration:
                     raise ValueError("PERFECT must be 'True' or 'False'")
                 configuration.perfect = value.lower() == "true"
                 configs_required.remove("PERFECT")
-            elif key == "GAMEMODE":
-                if value.lower() not in ["true", "false"]:
-                    raise ValueError("GAMEMODE must be 'True' or 'False'")
-                configuration.gamemode = value.lower() == "true"
             else:
                 raise ValueError("Wrong configuration")
         if configs_required:
@@ -149,6 +149,11 @@ def validate_config(config: dict[str, str]) -> Configuration:
             ("EXIT", configuration.exit),
         ]
         if configuration.gamemode:
+            if (configuration.teseu == (-1, -1)
+                    or configuration.minotaur == (-1, -1)):
+                raise ValueError(
+                    "GAMEMODE=True requires TESEU and MINOTAUR"
+                )
             if configuration.teseu == configuration.minotaur:
                 raise ValueError(
                     "TESEU and MINOTAUR cannot be at the same position"
@@ -163,9 +168,9 @@ def validate_config(config: dict[str, str]) -> Configuration:
                     f"{name} cannot be at the same position as EXIT"
                 )
             if x < 0 or x >= configuration.width:
-                raise ValueError(f"{name} X coordinate {x} out of bounds")
+                raise ValueError(f"check your {name} coordinate")
             if y < 0 or y >= configuration.height:
-                raise ValueError(f"{name} Y coordinate {y} out of bounds")
+                raise ValueError(f"check your {name} coordinate")
     except Exception as e:
         print(f"Error validating config: {e}")
         exit(1)
