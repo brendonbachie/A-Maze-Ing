@@ -1,0 +1,35 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Packaging / build output
+build/
+dist/
+*.egg-info/
+*.spec.bak
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Runtime data produced by the game
+highscores.json
+*.tmp
+
+# Editors and OS noise
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
